@@ -9,6 +9,13 @@ def gradient_angle(image: np.ndarray, kernel_size: int = 3) -> np.ndarray:
     angle = cv2.phase(x_grad, y_grad, angleInDegrees=True)
     return angle
 
+def calculate_sharp_edges(self, image: np.ndarray, threshold: float = 10.0) -> int:
+    grad_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=3)
+    grad_magnitude = cv2.magnitude(grad_x, grad_y)
+    sharp_edges = int(np.sum(grad_magnitude > threshold))
+    return sharp_edges
+
 def process_image(image: np.ndarray, idx: int, dir: str | os.PathLike) -> (np.array, float):    
     start_time = time.time()
 
