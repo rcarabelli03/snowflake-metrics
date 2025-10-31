@@ -18,4 +18,5 @@ if __name__=="__main__":
         image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
         res = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image)
         processed_image = preprocess_image(res)
-
+        metrics = analyse_image(processed_image)
+        print(f"Metrics for {os.path.basename(img_path)}: {metrics}")
