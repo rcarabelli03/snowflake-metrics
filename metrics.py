@@ -1,10 +1,14 @@
-import cv2
-import time
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+import cv2
+from skimage.measure import label, regionprops, find_contours
+from skimage import filters, morphology
+from processor import calculate_sharp_edges
 
-def analyse_image(image, thresh=100):
+import time
+import pandas as pd
+import math
+
+def analyse_image(image: np.ndarray, thresh: int = 100) -> tuple[list, float]:
     """Continuously processes images from the queue until the process is stopped."""
 
     # Initialization of image counter and data container
@@ -19,7 +23,8 @@ def analyse_image(image, thresh=100):
     data = []
 
     # Save image if the amount of sharp edges in it are above a defined threshold
-    if processor.calculate_sharp_edges(smoothed_image) > thresh: 
+    start = time.time_ns()
+    if calculate_sharp_edges(smoothed_image) > thresh: 
         # Create file in previously generated folder
 
         # Create binary image with defined threshold
@@ -27,6 +32,7 @@ def analyse_image(image, thresh=100):
         
         #thresh = 30
         #binary_image = ((smoothed_image > thresh) * 255)
+        
         threshold = filters.threshold_otsu(smoothed_image)
         binary_image = smoothed_image > threshold
         binary_image = morphology.remove_small_objects(binary_image, 50)
@@ -55,10 +61,13 @@ def analyse_image(image, thresh=100):
                 # Append diameter in micrometers
                 data.append(snowflake.equivalent_diameter_area*pixel_size)
                 # Append complexity parameter of snowflake
-                data.append(snowflake.perimeter/(math.pi*snowflake.equivalent_diameter_area)) 
+                data.append(snowflake.perimeter/(math.pi*snowflake.equivalent_diameter_area))                 
     else:
         print("No snowflake detected or not in focus.")
         
+    end = time.time_ns()
+    elapsed = end - start
+        
 
-    return data
+    return (data, elapsed)
 
