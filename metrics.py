@@ -7,8 +7,10 @@ from processor import calculate_sharp_edges
 import time
 import pandas as pd
 import math
+from utils.plotutils import plot_ellipse_overlay
+from utils.utils import info, warn, err, header
 
-def analyse_image(image: np.ndarray, thresh: int = 100) -> tuple[list, float]:
+def analyse_image(image: np.ndarray, thresh: int = 100, visual=False, save=False) -> tuple[list, float]:
     """Continuously processes images from the queue until the process is stopped."""
 
     # Initialization of image counter and data container
@@ -63,8 +65,14 @@ def analyse_image(image: np.ndarray, thresh: int = 100) -> tuple[list, float]:
                 # Append complexity parameter of snowflake
                 data.append(snowflake.perimeter/(math.pi*snowflake.equivalent_diameter_area))                 
     else:
-        print("No snowflake detected or not in focus.")
+        err("Image discarded due to insufficient sharp edges.")
+    
+    if visual:
+        plot_ellipse_overlay(image, data, 1000)
         
+    if save:
+        pass # TODO: implement saving functionality  
+    
     end = time.time_ns()
     elapsed = end - start
         

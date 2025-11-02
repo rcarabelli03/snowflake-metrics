@@ -8,7 +8,7 @@ def warn(str: str) -> None:
     
 
 def header(str: str) -> None:
-    print(f"{bcolors.HEADER}{str}{bcolors.ENDC}")
+    print(f"{bcolors.HEADER}[INFO] {str}{bcolors.ENDC}")
    
 def err(str: str) -> None:
     print(f"{bcolors.FAIL}[ERROR] {str}{bcolors.ENDC}")
