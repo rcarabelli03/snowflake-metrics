@@ -1,8 +1,13 @@
 import numpy as np
 import cv2
 from cv2.typing import MatLike
-import pandas as pd
 import time
+
+def gamma(img_original: MatLike, gamma: float = 0.5) -> MatLike:
+    lookUpTable = np.empty((1,256), np.uint8)
+    for i in range(256):
+        lookUpTable[0,i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
+    return cv2.LUT(img_original, lookUpTable)
 
 def gradient_angle(image: MatLike, kernel_size: int = 3) -> MatLike:
     x_grad = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=kernel_size)
@@ -25,7 +30,7 @@ def preprocess_image(image: np.ndarray) -> tuple[np.ndarray, float]:
     g_sigma = 5
     s_ksize = 3
     
-    
+    # smoothed_image = cv2.GaussianBlur(image, (25, 25), sigmaX=2, sigmaY=2)
     res = cv2.GaussianBlur(image, (g_ksize, g_ksize), g_sigma)
     res = gradient_angle(res, kernel_size=s_ksize)
     
@@ -41,7 +46,7 @@ def preprocess_image(image: np.ndarray) -> tuple[np.ndarray, float]:
 
     #comparison = cv2.hconcat([gray, res])
     #cv2.imshow("Original --- Processed Image", comparison)
-    cv2.imshow("Processed Image", opening)
-    cv2.waitKey(1)
+    # cv2.imshow("Processed Image", opening)
+    # cv2.waitKey(1)
     
     return (opening, elapsed_time)

@@ -6,12 +6,16 @@ import cv2
 from utils.utils import info, warn, err, header
 
 def get_image_paths(directory: str) -> typing.List[str]:
+    if not os.path.exists(directory):
+        err(f"Directory does not exist: {directory}")
+        return []
     image_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.tiff'}
     image_paths: list[str] = []
     for root, _, files in os.walk(directory):
         for file in files:
             if os.path.splitext(file)[1].lower() in image_extensions:
                 image_paths.append(os.path.join(root, file))
+    info(f"Found {len(image_paths)} image files in directory: {directory}")
     return image_paths
 
 def get_image_filename(image_path: str) -> str:
@@ -46,7 +50,7 @@ def get_filtered_image_paths() -> typing.List[str]:
     return images
 
 
-def __deprecated___get_image_paths_filtered(image_dir: str = "../images/pictures_Test",
+def __deprecated___get_image_paths_filtered(image_dir: str = "/mnt/d/pictures_Test",
                                             key: typing.Callable[[str], tuple[int, int, int]] = lambda x: (int(x.split('_')[0].split('-')[1]), int(x.split('_')[1].split('-')[0]), int(x.split('_')[1].split('-')[1])),
                                             start_from: str = "10-28_15-27-6") -> typing.List[str]:
     ''' **DEPRECATED**\\

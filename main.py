@@ -9,17 +9,19 @@ import pandas as pd
 
 # import tqdm
 
-from utils.pathutils import get_snowflake_id_from_path, get_image_filename, get_filtered_image_paths, __deprecated___get_image_paths_filtered
+from utils.pathutils import get_snowflake_id_from_path, get_image_paths, get_image_filename, get_filtered_image_paths, __deprecated___get_image_paths_filtered
 from utils.plotutils import plot_ellipse_overlay
 from utils.consolecolors import bcolors
 from utils.utils import info, warn, err, header
-from processor import preprocess_image
+from processor import preprocess_image, gamma
 from metrics import analyse_image
 
 # __import__('pdb').set_trace()
 if __name__=="__main__":
     
-    images = __deprecated___get_image_paths_filtered() #get_filtered_image_paths()
+    # images = get_image_paths("/mnt/d/pictures_Vikram/10-29_11-52-33/")
+    images = get_image_paths("../../images/nice_flakes")
+    # images = ["../../images/nice_flakes/Snowflake_20.bmp"] #
     for img_path in images:
         
         name = get_image_filename(img_path)
@@ -33,6 +35,9 @@ if __name__=="__main__":
             continue
         
         res = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image)
+        # res = gamma(res, gamma=0.4)
+        # cv2.imshow("CLAHE Result", res)
+        # cv2.waitKey(10000)
         processed_image, elapsed_processor  = preprocess_image(res)
         metrics, elapsed_analyser = analyse_image(res, visual=True)
         print(f"Metrics for {os.path.basename(img_path)}: {metrics}")
