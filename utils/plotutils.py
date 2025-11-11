@@ -2,6 +2,8 @@ import os
 import typing
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+
 # import plotly
 # import plotly.express as px
 # import plotly.graph_objects as go
@@ -33,6 +35,10 @@ def skimage_show_plot(snowflake, binary_image):
     y1 = y0 - math.sin(orientation) * 0.5 * snowflake.axis_minor_length
     x2 = x0 - math.sin(orientation) * 0.5 * snowflake.axis_major_length
     y2 = y0 - math.cos(orientation) * 0.5 * snowflake.axis_major_length
+    
+    ellipse = Ellipse((x0, y0), snowflake.axis_minor_length, snowflake.axis_major_length,
+                      angle=-math.degrees(orientation), edgecolor='red', facecolor='none', linewidth=2.5)
+    ax.add_patch(ellipse)
 
     ax.plot((x0, x1), (y0, y1), '-r', linewidth=2.5)
     ax.plot((x0, x2), (y0, y2), '-r', linewidth=2.5)
@@ -42,5 +48,7 @@ def skimage_show_plot(snowflake, binary_image):
     bx = (minc, maxc, maxc, minc, minc)
     by = (minr, minr, maxr, maxr, minr)
     ax.plot(bx, by, '-b', linewidth=2.5)
-
+    
+    fig.set_size_inches(20, 13)
+    plt.tight_layout()
     plt.show()

@@ -16,11 +16,15 @@ from utils.utils import info, warn, err, header
 from processor import preprocess_image, gamma
 from metrics import analyse_image
 
+# base_path = "../images/pictures_Test"
+# dir_list = ["10-7_15-42-5/", "10-7_15-45-41/", "10-7_15-51-6/", "10-28_15-27-6"]
+# path = base_path + "/" + dir_list[-1]
+
 # __import__('pdb').set_trace()
 if __name__=="__main__":
     
     # images = get_image_paths("/mnt/d/pictures_Vikram/10-29_11-52-33/")
-    images = get_image_paths("../../images/nice_flakes")
+    images = get_image_paths("../images/nice_flakes")
     # images = ["../../images/nice_flakes/Snowflake_20.bmp"] #
     for img_path in images:
         
@@ -29,12 +33,12 @@ if __name__=="__main__":
             continue
         header(f"Processing image: {img_path}, id: {get_snowflake_id_from_path(img_path)}")
         
-        image: Optional[MatLike] = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-        if image is None:
+        res: Optional[MatLike] = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        if res is None:
             err(f"Failed to read image: {img_path}")
             continue
         
-        res = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image)
+        # res = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(res)
         # res = gamma(res, gamma=0.4)
         # cv2.imshow("CLAHE Result", res)
         # cv2.waitKey(10000)
