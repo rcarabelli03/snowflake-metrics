@@ -89,13 +89,15 @@ def analyse_image(image: np.ndarray, thresh: int = 300, visual=False, save=False
                     cv2.imwrite(filename, sliced_img)
                     cv2.imwrite(filename2, snowflake_img.astype(np.uint8)*255)
                 
-                if visual:
+                if visual and False:
                     skimage_show_plot(snowflake, cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image), contour, save=save, save_path=save_path, descriptor=descriptor, flake_id=flake)
                     
                 # Append center and axes of snowflake
                 tmp = []
-                tmp.append(snowflake.centroid)
-                tmp.append((snowflake.axis_major_length, snowflake.axis_minor_length))
+                tmp.append(snowflake.centroid[1]) # centroid is (row, col) -> (y,x)
+                tmp.append(snowflake.centroid[0]) # centroid is (row, col) -> (y,x)
+                tmp.append(snowflake.axis_major_length)
+                tmp.append(snowflake.axis_minor_length)
                 # Append orientation of snowflake in grad
                 tmp.append(snowflake.orientation)
                 # Append aspect ratio of snowflake
@@ -113,8 +115,16 @@ def analyse_image(image: np.ndarray, thresh: int = 300, visual=False, save=False
                 
                 data.extend(tmp)
                 
-                if visual and False:
-                    plot_ellipse_overlay(image, tmp, 1000, save=save, save_path=save_path, descriptor=descriptor, flake_id=flake) 
+                if save:
+                    metrics_array = np.array(tmp).squeeze()
+                    print(f"Metrics array: {metrics_array}")        
+                    df = pd.DataFrame(metrics_array, columns=['centroid_x', 'centroid_y', 'axis_major_length', 'axis_minor_length', 'orientation_rad', 'aspect_ratio', 'diameter_um', 'complexity', 'area_um2', 'perimeter_um', 'solidity'])
+                    csv_filename = f"snowflake_{flake}_{int(snowflake.equivalent_diameter_area*pixel_size)}um_metrics.csv"
+                    csv_filepath = os.path.join(save_path, csv_filename)
+                    df.to_csv(csv_filepath)
+                
+                if visual:
+                    plot_ellipse_overlay(image, tmp, 1000, save=save, save_path=save_path, descriptor=descriptor, flake_id=flake)
     else:
         err("Image discarded due to insufficient sharp edges.")
         

@@ -13,7 +13,7 @@ from utils.pathutils import get_snowflake_id_from_path, get_image_paths, get_ima
 from utils.plotutils import plot_ellipse_overlay
 from utils.consolecolors import bcolors
 from utils.utils import info, warn, err, header
-from processor import preprocess_image, gamma
+from processor import preprocess_image, gamma, image_stats
 from metrics import analyse_image
 
 # base_path = "../images/pictures_Test"
@@ -49,10 +49,14 @@ if __name__=="__main__":
         # cv2.imshow("CLAHE Result", res)
         # cv2.waitKey(10000)
         processed_image, elapsed_processor  = preprocess_image(res)
-        metrics, elapsed_analyser           = analyse_image(res, visual=True, save=True, save_path=save_path)
+        stats                               = image_stats(res)
+        metrics, elapsed_analyser           = analyse_image(res, visual=True, save=False, save_path=save_path)
         print(f"Metrics for {os.path.basename(img_path)}: {metrics}")
-        if len(metrics) == 0:
-            continue
+        df = pd.DataFrame(stats, columns=['min', 'max', 'mean', 'std', 'variance', 'entropy', 'snr', 'mean_grad', 'median_grad', 'std_grad', 'mean_laplace', 'median_laplace', 'std_laplace', 'mean_angle', 'median_angle', 'std_angle', 'high_angle_count'])
         # plot_ellipse_overlay(image, metrics, 3000)
+        csv_filename = f"snowflake_{get_snowflake_id_from_path(img_path)}_stats.csv"
+        csv_filepath = os.path.join(save_path, csv_filename)
+        df.to_csv(csv_filepath)
+        
         info(f"Processing time: {elapsed_processor/1e6:.4f} ms, Analysis time: {elapsed_analyser/1e6:.4f} ms")
     cv2.destroyAllWindows()

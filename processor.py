@@ -2,12 +2,25 @@ import numpy as np
 import cv2
 from cv2.typing import MatLike
 import time
+from skimage.measure import shannon_entropy
+
 
 def gamma(img_original: MatLike, gamma: float = 0.5) -> MatLike:
     lookUpTable = np.empty((1,256), np.uint8)
     for i in range(256):
         lookUpTable[0,i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
     return cv2.LUT(img_original, lookUpTable)
+
+def laplace_detector(image: MatLike, kernel_size: int = 3) -> MatLike:
+    laplace = cv2.Laplacian(image, cv2.CV_64F, ksize=kernel_size)
+    absolute = cv2.convertScaleAbs(laplace) ## alpha=255/laplace.max()
+    return absolute
+
+def sobel_detector(image: MatLike, kernel_size: int = 3):
+    x_grad = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=kernel_size)
+    y_grad = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=kernel_size)
+    mag = cv2.magnitude(x_grad, y_grad)
+    return (x_grad, y_grad, mag)
 
 def gradient_angle(image: MatLike, kernel_size: int = 3) -> MatLike:
     x_grad = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=kernel_size)
@@ -21,6 +34,13 @@ def calculate_sharp_edges(image: np.ndarray, threshold: float = 10.0) -> int:
     grad_magnitude = cv2.magnitude(grad_x, grad_y)
     sharp_edges = int(np.sum(grad_magnitude > threshold))
     return sharp_edges
+
+    
+def SNR(a: MatLike, axis: int = None, ddof: int = 0) -> MatLike:
+    a = np.asanyarray(a)
+    m = a.mean(axis)
+    sd = a.std(axis=axis, ddof=ddof)
+    return np.where(sd == 0, 0, m/sd)
 
 def preprocess_image(image: np.ndarray) -> tuple[np.ndarray, float]:    
     start_time = time.time_ns()
@@ -50,3 +70,23 @@ def preprocess_image(image: np.ndarray) -> tuple[np.ndarray, float]:
     # cv2.waitKey(1)
     
     return (opening, elapsed_time)
+
+def image_stats(image: np.ndarray):
+    """Compute basic statistics (min, max, mean, std, entropy, ...) for the image."""
+    return [np.min(image),
+            np.max(image),
+            np.mean(image),
+            np.std(image),
+            np.var(image),
+            shannon_entropy(image),
+            SNR(image),
+            np.mean(sobel_detector(image)[2]),
+            np.median(sobel_detector(image)[2]),
+            np.std(sobel_detector(image)[2]),
+            np.mean(laplace_detector(image)),
+            np.median(laplace_detector(image)),
+            np.std(laplace_detector(image)),
+            np.mean(gradient_angle(image)),
+            np.median(gradient_angle(image)),
+            np.std(gradient_angle(image)),
+            np.sum(gradient_angle(image) >= 70)]
