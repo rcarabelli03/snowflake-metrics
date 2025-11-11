@@ -12,7 +12,7 @@ from cv2.typing import MatLike
 import math
 
 
-def plot_ellipse_overlay(img: MatLike, data: np.ndarray, display_time: int) -> None:
+def plot_ellipse_overlay(img: MatLike, data: list, display_time: int, save=None, save_path=None, descriptor=None, flake_id=None) -> None:
     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
     for i in range(0, len(data), 9):
         centroid = (np.round(data[i][1]).astype(int), np.round(data[i][0]).astype(int))
@@ -24,8 +24,12 @@ def plot_ellipse_overlay(img: MatLike, data: np.ndarray, display_time: int) -> N
                     -math.degrees(data[i+2]), 0, 360, (0,0,255), 2)
     cv2.imshow("Ellipses Overlay", img)
     cv2.waitKey(display_time)
+    if save and save_path is not None and descriptor is not None and flake_id is not None:
+        filename = f"snowflake_{descriptor}_{flake_id}_ellipse_overlay.png"
+        filename = os.path.join(save_path, filename)
+        cv2.imwrite(filename, img)
             
-def skimage_show_plot(snowflake, binary_image, contour=None) -> None:
+def skimage_show_plot(snowflake, binary_image, contour=None, save=None, save_path=None, descriptor=None, flake_id=None) -> None:
     fig, ax = plt.subplots()
     ax.imshow(binary_image, cmap='gray') ##     ax.imshow(binary_image, cmap=plt.cm.gray)
     
@@ -57,3 +61,10 @@ def skimage_show_plot(snowflake, binary_image, contour=None) -> None:
     fig.set_size_inches(10, 13/2)
     plt.tight_layout()
     plt.show()
+    
+    if save and save_path is not None and descriptor is not None and flake_id is not None:
+        filename = f"snowflake_{descriptor}_{flake_id}_analysis.png"
+        filename = os.path.join(save_path, filename)
+        fig.set_dpi(500)
+        fig.savefig(filename)
+    

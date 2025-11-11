@@ -20,12 +20,16 @@ from metrics import analyse_image
 # dir_list = ["10-7_15-42-5/", "10-7_15-45-41/", "10-7_15-51-6/", "10-28_15-27-6"]
 # path = base_path + "/" + dir_list[-1]
 
+save_path = "/mnt/d/snowflake_analysis_plots/"
+if not os.path.exists(save_path):
+    os.makedirs(save_path, exist_ok=True)
+
 # __import__('pdb').set_trace()
 if __name__=="__main__":
     
     # images = get_image_paths("/mnt/e/pictures_Vikram/10-29_11-52-33/")
     # images = get_filtered_image_paths()
-    images = __deprecated___get_image_paths_filtered(image_dir="/mnt/e/pictures_Test_old/", start_from="10-22_12-27-20")
+    images = __deprecated___get_image_paths_filtered(image_dir="/mnt/d/pictures_Test_old/", start_from="10-22_12-27-20")
     # images = get_image_paths("../images/nice_flakes")
     # images = ["../../images/nice_flakes/Snowflake_20.bmp"] #
     for img_path in images:
@@ -45,7 +49,7 @@ if __name__=="__main__":
         # cv2.imshow("CLAHE Result", res)
         # cv2.waitKey(10000)
         processed_image, elapsed_processor  = preprocess_image(res)
-        metrics, elapsed_analyser           = analyse_image(res, visual=True)
+        metrics, elapsed_analyser           = analyse_image(res, visual=True, save=True, save_path=save_path)
         print(f"Metrics for {os.path.basename(img_path)}: {metrics}")
         if len(metrics) == 0:
             continue
