@@ -50,7 +50,7 @@ def get_filtered_image_paths() -> typing.List[str]:
     return images
 
 
-def __deprecated___get_image_paths_filtered(image_dir: str = "/mnt/d/pictures_Test",
+def __deprecated___get_image_paths_filtered(image_dir: str = "/mnt/e/pictures_Test",
                                             key: typing.Callable[[str], tuple[int, int, int]] = lambda x: (int(x.split('_')[0].split('-')[1]), int(x.split('_')[1].split('-')[0]), int(x.split('_')[1].split('-')[1])),
                                             start_from: str = "10-28_15-27-6") -> typing.List[str]:
     ''' **DEPRECATED**\\

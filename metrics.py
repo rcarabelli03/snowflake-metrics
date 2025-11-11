@@ -51,7 +51,9 @@ def analyse_image(image: np.ndarray, thresh: int = 300, visual=False, save=False
         # Morphological closing to fill small holes inside snowlakes
         kernel = np.ones((20, 20), np.uint8)
         closed_binary_image = cv2.morphologyEx(res.astype(np.uint8), cv2.MORPH_CLOSE, kernel, iterations=3)
-        # Calculate regions of snowflakes in image
+        
+        # cv2.imshow("Closed Binary Image", closed_binary_image.astype(np.uint8)*255)
+        # cv2.waitKey(0)
         
         label_img = label(closed_binary_image)
         snowflakes = regionprops(label_img)
@@ -66,7 +68,7 @@ def analyse_image(image: np.ndarray, thresh: int = 300, visual=False, save=False
                 label_i = snowflake.label
                 contour = find_contours(label_img == label_i, 0.5)
                 if visual:
-                    skimage_show_plot(snowflake, gamma(image, gamma=0.4), contour)
+                    skimage_show_plot(snowflake, cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image), contour)
                 
                 flake += 1
                 snowflake_img = snowflake.image_filled
