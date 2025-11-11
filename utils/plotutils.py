@@ -25,10 +25,10 @@ def plot_ellipse_overlay(img: MatLike, data: np.ndarray, display_time: int) -> N
     cv2.imshow("Ellipses Overlay", img)
     cv2.waitKey(display_time)
             
-def skimage_show_plot(snowflake, binary_image):
+def skimage_show_plot(snowflake, binary_image, contour=None) -> None:
     fig, ax = plt.subplots()
     ax.imshow(binary_image, cmap='gray') ##     ax.imshow(binary_image, cmap=plt.cm.gray)
-
+    
     y0, x0 = snowflake.centroid
     orientation = snowflake.orientation
     x1 = x0 + math.cos(orientation) * 0.5 * snowflake.axis_minor_length
@@ -39,7 +39,12 @@ def skimage_show_plot(snowflake, binary_image):
     ellipse = Ellipse((x0, y0), snowflake.axis_minor_length, snowflake.axis_major_length,
                       angle=-math.degrees(orientation), edgecolor='red', facecolor='none', linewidth=2.5)
     ax.add_patch(ellipse)
-
+    
+    if contour is not None:
+        for contour_part in contour:
+            ax.plot(contour_part[:, 1], contour_part[:, 0], '-g', linewidth=2.0)
+            
+    
     ax.plot((x0, x1), (y0, y1), '-r', linewidth=2.5)
     ax.plot((x0, x2), (y0, y2), '-r', linewidth=2.5)
     ax.plot(x0, y0, '.g', markersize=15)
@@ -49,6 +54,6 @@ def skimage_show_plot(snowflake, binary_image):
     by = (minr, minr, maxr, maxr, minr)
     ax.plot(bx, by, '-b', linewidth=2.5)
     
-    fig.set_size_inches(20, 13)
+    fig.set_size_inches(10, 13/2)
     plt.tight_layout()
     plt.show()

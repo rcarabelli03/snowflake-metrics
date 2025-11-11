@@ -24,7 +24,7 @@ from metrics import analyse_image
 if __name__=="__main__":
     
     # images = get_image_paths("/mnt/d/pictures_Vikram/10-29_11-52-33/")
-    images = get_image_paths("../images/nice_flakes")
+    images = get_image_paths("../../images/nice_flakes")
     # images = ["../../images/nice_flakes/Snowflake_20.bmp"] #
     for img_path in images:
         

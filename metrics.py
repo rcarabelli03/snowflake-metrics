@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 from skimage.measure import label, regionprops, find_contours
 from skimage import filters, morphology
-from processor import calculate_sharp_edges
+from processor import calculate_sharp_edges, gamma
 
 import time
 import pandas as pd
@@ -44,9 +44,9 @@ def analyse_image(image: np.ndarray, thresh: int = 300, visual=False, save=False
         _, res = cv2.threshold(res, 10, 255, cv2.THRESH_OTSU)
         # kernel = np.ones((3,3),np.uint8)
         # opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 2)
-        
-        res = morphology.remove_small_objects(res, 70)
-        res = morphology.remove_small_holes(res, 70)
+        scale = 70
+        res = morphology.remove_small_objects(res, scale)
+        res = morphology.remove_small_holes(res, scale)
         #cv2.imshow("Binary Image", binary_image.astype(np.uint8)*255)
         # Morphological closing to fill small holes inside snowlakes
         kernel = np.ones((20, 20), np.uint8)
@@ -62,8 +62,11 @@ def analyse_image(image: np.ndarray, thresh: int = 300, visual=False, save=False
         for snowflake in snowflakes:
             # Only save the snowflakes that are bigger than 50 pixel in diameter
             
-            if snowflake.equivalent_diameter_area >= 70: # 100 
-                skimage_show_plot(snowflake, closed_binary_image)
+            if snowflake.equivalent_diameter_area >= scale: # 100
+                label_i = snowflake.label
+                contour = find_contours(label_img == label_i, 0.5)
+                if visual:
+                    skimage_show_plot(snowflake, gamma(image, gamma=0.4), contour)
                 
                 flake += 1
                 snowflake_img = snowflake.image_filled
