@@ -73,6 +73,13 @@ def preprocess_image(image: np.ndarray) -> tuple[np.ndarray, float]:
 
 def image_stats(image: np.ndarray):
     """Compute basic statistics (min, max, mean, std, entropy, ...) for the image."""
+    # Run detectors once and convert to numpy arrays with a numeric dtype so numpy functions accept them
+    _, _, sobel_mag = sobel_detector(image)
+    sobel_mag = np.asarray(sobel_mag, dtype=float)
+
+    lap = np.asarray(laplace_detector(image), dtype=float)
+    angle = np.asarray(gradient_angle(image), dtype=float)
+
     return [np.min(image),
             np.max(image),
             np.mean(image),
@@ -80,13 +87,13 @@ def image_stats(image: np.ndarray):
             np.var(image),
             shannon_entropy(image),
             SNR(image),
-            np.mean(sobel_detector(image)[2]),
-            np.median(sobel_detector(image)[2]),
-            np.std(sobel_detector(image)[2]),
-            np.mean(laplace_detector(image)),
-            np.median(laplace_detector(image)),
-            np.std(laplace_detector(image)),
-            np.mean(gradient_angle(image)),
-            np.median(gradient_angle(image)),
-            np.std(gradient_angle(image)),
-            np.sum(gradient_angle(image) >= 70)]
+            np.mean(sobel_mag),
+            np.median(sobel_mag),
+            np.std(sobel_mag),
+            np.mean(lap),
+            np.median(lap),
+            np.std(lap),
+            np.mean(angle),
+            np.median(angle),
+            np.std(angle),
+            np.sum(angle >= 70)]

@@ -77,20 +77,19 @@ def analyse_image(image: np.ndarray, thresh: int = 300, visual=False, save=False
                 # cv2.imshow("Detected Snowflake", snowflake_img.astype(np.uint8)*255)
                 # print(f"Intensity average: {np.mean(sliced_img)}, std: {np.std(sliced_img)}")
                 subfolder = f"snowflake_{int(snowflake.equivalent_diameter_area*pixel_size)}um"
-                save_path = os.path.join(save_path, subfolder)
+                snowflake_path = os.path.join(save_path, subfolder)
                 
                 if save:
-                    if not os.path.exists(save_path):
-                        os.makedirs(save_path, exist_ok=True)
+                    os.makedirs(snowflake_path, exist_ok=True)
                     filename = f"snowflake_{flake}_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png"
                     filename2 = f"snowflake_{flake}_binary_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png"
-                    filename2 = os.path.join(save_path, filename2)
-                    filename = os.path.join(save_path, filename)
+                    filename2 = os.path.join(snowflake_path, filename2)
+                    filename = os.path.join(snowflake_path, filename)
                     cv2.imwrite(filename, sliced_img)
                     cv2.imwrite(filename2, snowflake_img.astype(np.uint8)*255)
                 
-                if visual and False:
-                    skimage_show_plot(snowflake, cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image), contour, save=save, save_path=save_path, descriptor=descriptor, flake_id=flake)
+                if visual:
+                    skimage_show_plot(snowflake, cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image), contour, save=save, save_path=snowflake_path, descriptor=descriptor, flake_id=flake)
                     
                 # Append center and axes of snowflake
                 tmp = []
@@ -118,13 +117,14 @@ def analyse_image(image: np.ndarray, thresh: int = 300, visual=False, save=False
                 if save:
                     metrics_array = np.array(tmp).squeeze()
                     print(f"Metrics array: {metrics_array}")        
-                    df = pd.DataFrame(metrics_array, columns=['centroid_x', 'centroid_y', 'axis_major_length', 'axis_minor_length', 'orientation_rad', 'aspect_ratio', 'diameter_um', 'complexity', 'area_um2', 'perimeter_um', 'solidity'])
+                    df = pd.DataFrame(columns=['centroid_x', 'centroid_y', 'axis_major_length', 'axis_minor_length', 'orientation_rad', 'aspect_ratio', 'diameter_um', 'complexity', 'area_um2', 'perimeter_um', 'solidity'])
+                    df.loc[0] = metrics_array
                     csv_filename = f"snowflake_{flake}_{int(snowflake.equivalent_diameter_area*pixel_size)}um_metrics.csv"
-                    csv_filepath = os.path.join(save_path, csv_filename)
+                    csv_filepath = os.path.join(snowflake_path, csv_filename)
                     df.to_csv(csv_filepath)
                 
                 if visual:
-                    plot_ellipse_overlay(gamma(image,0.4), tmp, 1000, save=save, save_path=save_path, descriptor=descriptor, flake_id=flake)
+                    plot_ellipse_overlay(gamma(image,0.4), tmp, 1000, save=save, save_path=snowflake_path, descriptor=descriptor, flake_id=flake)
     else:
         err("Image discarded due to insufficient sharp edges.")
         
