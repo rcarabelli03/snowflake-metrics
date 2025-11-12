@@ -27,6 +27,14 @@ if not os.path.exists(save_path):
 # __import__('pdb').set_trace()
 if __name__=="__main__":
     
+    csv_filename = "snowflake_image_metrics.csv"
+    csv_filepath = os.path.join(save_path, csv_filename)
+    if os.path.exists(csv_filepath):
+        warn(f"CSV file {csv_filepath} already exists and will be overwritten.")
+        os.remove(csv_filepath)
+        
+    stats_df = pd.DataFrame()
+    
     # images = get_image_paths("/mnt/e/pictures_Vikram/10-29_11-52-33/")
     # images = get_filtered_image_paths()
     images = __deprecated___get_image_paths_filtered(image_dir="/mnt/d/pictures_Test_old/", start_from="10-22_12-27-20")
@@ -52,11 +60,10 @@ if __name__=="__main__":
         stats                               = image_stats(res)
         metrics, elapsed_analyser           = analyse_image(res, visual=True, save=False, save_path=save_path)
         print(f"Metrics for {os.path.basename(img_path)}: {metrics}")
-        df = pd.DataFrame(stats, columns=['min', 'max', 'mean', 'std', 'variance', 'entropy', 'snr', 'mean_grad', 'median_grad', 'std_grad', 'mean_laplace', 'median_laplace', 'std_laplace', 'mean_angle', 'median_angle', 'std_angle', 'high_angle_count'])
-        # plot_ellipse_overlay(image, metrics, 3000)
-        csv_filename = f"snowflake_{get_snowflake_id_from_path(img_path)}_stats.csv"
-        csv_filepath = os.path.join(save_path, csv_filename)
-        df.to_csv(csv_filepath)
+        
         
         info(f"Processing time: {elapsed_processor/1e6:.4f} ms, Analysis time: {elapsed_analyser/1e6:.4f} ms")
+        
+    stats_df.to_csv(csv_filepath, index=False)
+    
     cv2.destroyAllWindows()

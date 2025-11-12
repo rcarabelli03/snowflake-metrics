@@ -124,7 +124,7 @@ def analyse_image(image: np.ndarray, thresh: int = 300, visual=False, save=False
                     df.to_csv(csv_filepath)
                 
                 if visual:
-                    plot_ellipse_overlay(image, tmp, 1000, save=save, save_path=save_path, descriptor=descriptor, flake_id=flake)
+                    plot_ellipse_overlay(gamma(image,0.4), tmp, 1000, save=save, save_path=save_path, descriptor=descriptor, flake_id=flake)
     else:
         err("Image discarded due to insufficient sharp edges.")
         
