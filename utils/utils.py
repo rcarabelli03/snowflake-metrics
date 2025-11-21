@@ -61,9 +61,9 @@ The metrics can be analyzed using standard data analysis tools that support CSV 
     info_txt = f"metadata.txt"
     info_filepath = os.path.join(save_path, info_txt)
     with open(info_filepath, 'w') as f:
-        f.write(f"{run_number}\n")
-        f.write(f"{image_path}\n")
-        f.write(f"{csv_filepath}\n")
+        f.write(f"run_date:{run_number}\n")
+        f.write(f"image_path:{image_path}\n")
+        f.write(f"csv_filepath:{csv_filepath}\n")
         
     return (save_path, csv_filepath)
 
