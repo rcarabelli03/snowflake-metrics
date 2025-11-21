@@ -12,7 +12,7 @@ from cv2.typing import MatLike
 import math
 
 
-def plot_ellipse_overlay(img: MatLike, data: list, display_time: int, save=None, save_path=None, descriptor=None, flake_id=None) -> None:
+def plot_ellipse_overlay(img: MatLike, data: list, display_time: int, save=None, save_path=None, flake_id=None) -> None:
     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
     for i in range(0, len(data), 11):
         centroid = (np.round(data[i]).astype(int), np.round(data[i+1]).astype(int))
@@ -24,12 +24,12 @@ def plot_ellipse_overlay(img: MatLike, data: list, display_time: int, save=None,
                     -math.degrees(data[i+4]), 0, 360, (0,0,255), 2)
     cv2.imshow("Ellipses Overlay", img)
     cv2.waitKey(display_time)
-    if save and save_path is not None and descriptor is not None and flake_id is not None:
-        filename = f"snowflake_{descriptor}_{flake_id}_ellipse_overlay.png"
+    if save and save_path is not None and flake_id is not None:
+        filename = f"snowflake_{flake_id}_ellipse_overlay.png"
         filename = os.path.join(save_path, filename)
         cv2.imwrite(filename, img)
             
-def skimage_show_plot(snowflake, binary_image, contour=None, display=True, save=None, save_path=None, descriptor=None, flake_id=None) -> None:
+def skimage_show_plot(snowflake, binary_image, contour=None, display=True, save=None, save_path=None, flake_id=None) -> None:
     fig, ax = plt.subplots()
     ax.imshow(binary_image, cmap='gray') ##     ax.imshow(binary_image, cmap=plt.cm.gray)
     
@@ -63,9 +63,40 @@ def skimage_show_plot(snowflake, binary_image, contour=None, display=True, save=
     if display:
         plt.show()
     
-    if save and save_path is not None and descriptor is not None and flake_id is not None:
-        filename = f"snowflake_{descriptor}_{flake_id}_analysis.png"
+    if save and save_path is not None and flake_id is not None:
+        filename = f"snowflake_{flake_id}_analysis.png"
         filename = os.path.join(save_path, filename)
-        fig.set_dpi(500)
+        fig.set_dpi(1000)
         fig.savefig(filename)
+    plt.close()
+        
+def plot_histogram(image: np.ndarray, title: str, xlabel: str, ylabel: str, bins: int = 256, visual=False, save: bool = False, save_path: str = "") -> None:
+    fig = plt.figure()
+    # pdf
+    hist_vals, bin_edges = np.histogram(image.flatten(), bins=bins, range=(0,256))
+    # cdf
+    cdf = hist_vals.cumsum()
+    cdf_normalized = cdf * float(hist_vals.max()) / cdf.max()
+    # plot
+    plt.plot(cdf_normalized, color = 'b')
+    plt.hist(image.flatten(), bins=bins, range=(0,256), color = 'r')
+    plt.xlim([0,256])
+    plt.legend(('cdf','histogram'), loc = 'upper left')
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    # set ticks every 20 units and rotate x ticks by 45 degrees
+    plt.xticks(np.arange(0, 257, 20), rotation=45)
+    fig.set_size_inches(10, 13/2)
+    plt.tight_layout()
     
+    
+    if save and save_path:
+        filename = os.path.join(save_path, f"{title.replace(' ', '_')}.png")
+        fig.set_dpi(1000)
+        plt.savefig(filename)
+    
+    if visual:
+        plt.show()
+    
+    plt.close()    

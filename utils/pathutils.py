@@ -36,12 +36,12 @@ def get_str_image_id_from_path(image_path: str) -> str:
         image_path (str): Path to the image file.
     Returns:
         str: Snowflake ID extracted from the filename as a string.'''
-    name = get_image_filename(image_path)
-    basename = os.path.basename(image_path).split('.')[0]
+    basename = os.path.basename(image_path).split('.')[0] # remove extension, already contains snowflake id
     folder = get_image_folder(image_path)
     
     try:
-        snowflake_id = name.split('_')[1] + "_" + basename + "_" + folder
+        snowflake_id = basename + "_" + folder
+        print(snowflake_id)
     except IndexError:
         err(f"Could not extract snowflake ID from path: {image_path}")
         snowflake_id = "unknown"

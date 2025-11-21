@@ -10,9 +10,9 @@ import pandas as pd
 # import tqdm
 
 from utils.pathutils import get_snowflake_id_from_path, get_image_paths, get_image_filename, get_filtered_image_paths, __deprecated___get_image_paths_filtered, get_image_folder, get_str_image_id_from_path
-from utils.plotutils import plot_ellipse_overlay
+from utils.plotutils import plot_ellipse_overlay, plot_histogram
 from utils.consolecolors import bcolors
-from utils.utils import info, warn, err, header
+from utils.utils import initial_setup, info, warn, err, header
 from processor import preprocess_image, gamma, image_stats
 from metrics import analyse_image
 
@@ -21,24 +21,13 @@ from metrics import analyse_image
 # path = base_path + "/" + dir_list[-1]
 
 base_path = "/mnt/f/snowflake_analysis_plots"
-run_number = time.strftime("%Y-%m-%d_%a_%H-%M-%S", time.localtime())
-save_path = base_path + "/" + run_number
-if not os.path.exists(save_path):
-    os.makedirs(save_path, exist_ok=True)
+
 
 # __import__('pdb').set_trace()
 if __name__=="__main__":
     
-    csv_filename = "snowflake_image_metrics.csv"
-    csv_filepath = os.path.join(save_path, csv_filename)
-    if os.path.exists(csv_filepath):
-        warn(f"CSV file {csv_filepath} already exists and will be overwritten. Are you sure? [y/N]")
-        user_input = input().strip().lower()
-        if user_input != 'y':
-            info("Exiting program.")
-            exit(0)        
-        os.remove(csv_filepath)
-        
+    save_path, csv_filepath = initial_setup(base_path=base_path)
+            
     df = pd.DataFrame(columns=['min_intensity', 'max_intensity', 'mean_intensity', 'std_intensity', 'variance_intensity', 'entropy', 'snr', 'mean_gradient_magnitude', 'median_gradient_magnitude', 'std_gradient_magnitude', 'mean_laplace', 'median_laplace', 'std_laplace', 'mean_angle', 'median_angle', 'std_angle', 'sharp_edge_count'] + ['image_name'])
     
     # images = get_image_paths("/mnt/e/pictures_Vikram/10-29_11-52-33/")
@@ -88,7 +77,8 @@ if __name__=="__main__":
             
             processed_image, elapsed_processor  = preprocess_image(res)
             stats                               = image_stats(res) # returns an np array
-            metrics, elapsed_analyser           = analyse_image(image=res, plot=True, display_plot=False, save=True, save_path=save_path, folder_desc=f"{get_str_image_id_from_path(img_path)}")
+            metrics, elapsed_analyser           = analyse_image(image=res, thresh=300, plot=True, display_plot=False, save=True, save_path=save_path, folder_desc=f"{get_str_image_id_from_path(img_path)}")
+            
             print(f"Metrics for {os.path.basename(img_path)}: {metrics}")
             
             df.loc[len(df)] = np.concatenate((stats, [name]))
