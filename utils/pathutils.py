@@ -23,10 +23,44 @@ def get_image_filename(image_path: str) -> str:
     name = os.path.splitext(base_name)[0]
     return name
 
-def get_snowflake_id_from_path(image_path: str) -> int:
+def get_image_folder(image_path: str) -> str:
+    folder = os.path.dirname(image_path).split('/')[-1]
+    return folder
+
+def get_str_image_id_from_path(image_path: str) -> str:
+    '''
+    Retrieves a global id of the snowflake in the image from its file path as a string.
+    
+    Assumes filename format is "snowflake_<id_local>_...".
+    Args:
+        image_path (str): Path to the image file.
+    Returns:
+        str: Snowflake ID extracted from the filename as a string.'''
     name = get_image_filename(image_path)
+    basename = os.path.basename(image_path).split('.')[0]
+    folder = get_image_folder(image_path)
+    
     try:
-        snowflake_id = int(name.split('_')[1])
+        snowflake_id = name.split('_')[1] + "_" + basename + "_" + folder
+    except IndexError:
+        err(f"Could not extract snowflake ID from path: {image_path}")
+        snowflake_id = "unknown"
+    return snowflake_id
+
+
+def get_snowflake_id_from_path(image_path: str) -> int:
+    '''
+    Retrieves local id of snowflake in the image from its file path.
+    
+    Assumes filename format is "snowflake_<id>_...".
+    Args:
+        image_path (str): Path to the image file.
+    Returns:
+        int: Snowflake ID extracted from the filename.'''
+    name = get_image_filename(image_path)
+    # FIXME:I need a much more sophisticated id labelling system. Currently, this doenst take into account different sources
+    try:
+        snowflake_id = int(name.split('_')[1]) # This assumes the filename format is "snowflake_<id>_..."
     except (IndexError, ValueError):
         err(f"Could not extract snowflake ID from path: {image_path}")
         snowflake_id = -1

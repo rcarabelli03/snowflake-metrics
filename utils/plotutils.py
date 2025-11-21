@@ -29,7 +29,7 @@ def plot_ellipse_overlay(img: MatLike, data: list, display_time: int, save=None,
         filename = os.path.join(save_path, filename)
         cv2.imwrite(filename, img)
             
-def skimage_show_plot(snowflake, binary_image, contour=None, save=None, save_path=None, descriptor=None, flake_id=None) -> None:
+def skimage_show_plot(snowflake, binary_image, contour=None, display=True, save=None, save_path=None, descriptor=None, flake_id=None) -> None:
     fig, ax = plt.subplots()
     ax.imshow(binary_image, cmap='gray') ##     ax.imshow(binary_image, cmap=plt.cm.gray)
     
@@ -60,7 +60,8 @@ def skimage_show_plot(snowflake, binary_image, contour=None, save=None, save_pat
     
     fig.set_size_inches(10, 13/2)
     plt.tight_layout()
-    plt.show()
+    if display:
+        plt.show()
     
     if save and save_path is not None and descriptor is not None and flake_id is not None:
         filename = f"snowflake_{descriptor}_{flake_id}_analysis.png"
