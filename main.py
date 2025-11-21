@@ -21,12 +21,13 @@ from metrics import analyse_image
 # path = base_path + "/" + dir_list[-1]
 
 base_path = "/mnt/f/snowflake_analysis_plots"
+IMAGE_DIRECTORY = "/mnt/f/davos_1/11-17_1-57-46/" # 11-17_2-29-24
 
 
 # __import__('pdb').set_trace()
 if __name__=="__main__":
     
-    save_path, csv_filepath = initial_setup(base_path=base_path)
+    save_path, csv_filepath = initial_setup(image_path=IMAGE_DIRECTORY, out_path=base_path)
             
     df = pd.DataFrame(columns=['min_intensity', 'max_intensity', 'mean_intensity', 'std_intensity', 'variance_intensity', 'entropy', 'snr', 'mean_gradient_magnitude', 'median_gradient_magnitude', 'std_gradient_magnitude', 'mean_laplace', 'median_laplace', 'std_laplace', 'mean_angle', 'median_angle', 'std_angle', 'sharp_edge_count'] + ['image_name'])
     
@@ -35,7 +36,7 @@ if __name__=="__main__":
     # images = __deprecated___get_image_paths_filtered(image_dir="/mnt/e/pictures_Test/", start_from="11-12_15-50-21") # test_old, 10-22_12-27-20
     # images = get_image_paths("../images/nice_flakes")
     # images = ["../../images/nice_flakes/Snowflake_20.bmp"] #
-    images = get_image_paths("/mnt/f/davos_1/11-17_1-57-46/") # 11-17_2-29-24
+    images = get_image_paths(IMAGE_DIRECTORY) #
     # images = ["/mnt/f/davos_1/11-17_2-29-24/Snowflake_284.bmp"]
     
     '''

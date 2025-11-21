@@ -3,9 +3,9 @@ import time
 import typing
 from utils.consolecolors import bcolors
 
-def initial_setup(base_path: str) -> typing.Tuple[str, str]:
+def initial_setup(image_path: str, out_path: str) -> typing.Tuple[str, str]:
     run_number = time.strftime("%Y-%m-%d_%a_%H-%M-%S", time.localtime())
-    save_path = base_path + "/" + run_number
+    save_path = out_path + "/" + run_number
     if not os.path.exists(save_path):
         os.makedirs(save_path, exist_ok=True)
         
@@ -14,7 +14,7 @@ def initial_setup(base_path: str) -> typing.Tuple[str, str]:
 
 Generated on {run_number} by Snowflake Metrics Analysis Tool.
 
-Based on the images located in: `{base_path}`.
+Based on the images located in: `{out_path}`.
 
 ## Description
 
@@ -58,11 +58,11 @@ The metrics can be analyzed using standard data analysis tools that support CSV 
             exit(0)        
         os.remove(csv_filepath)
         
-    info_txt = f"info.txt"
+    info_txt = f"metadata.txt"
     info_filepath = os.path.join(save_path, info_txt)
     with open(info_filepath, 'w') as f:
         f.write(f"{run_number}\n")
-        f.write(f"{base_path}\n")
+        f.write(f"{image_path}\n")
         f.write(f"{csv_filepath}\n")
         
     return (save_path, csv_filepath)
