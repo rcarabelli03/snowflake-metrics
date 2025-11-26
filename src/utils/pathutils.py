@@ -71,8 +71,8 @@ def filter_paths_by_selection(image_paths: typing.List[str], selection: typing.L
     return filtered_paths
 
 def get_filtered_image_paths() -> typing.List[str]:
-    IMAGE_PATH: str = "/mnt/e/pictures_Vikram/10-29_11-52-33/"
-    FLAKE_SELECTION_PATH: str = "/mnt/c/Users/vikra/Desktop/ETHZ/semester_project/code_cv/output_img/2025-11-01_Sat_07-27-32_14/processed/"
+    IMAGE_PATH: str = "path/to/your/images/"
+    FLAKE_SELECTION_PATH: str = "path/to/images/that/define/selection/"
     images: list[str] = get_image_paths(IMAGE_PATH)
     info(f"Found {len(images)} images in {IMAGE_PATH}")
     selected_snowflakes: list[str] = [get_image_filename(p) for p in get_image_paths(FLAKE_SELECTION_PATH)]

@@ -11,6 +11,10 @@ import cv2
 from cv2.typing import MatLike
 import math
 
+def write_image(img: MatLike, save_path: str, filename: str) -> None:
+    filepath = os.path.join(save_path, filename)
+    cv2.imwrite(filepath, img)
+    
 
 def plot_ellipse_overlay(img: MatLike, data: list, display_time: int, save=None, save_path=None, flake_id=None) -> None:
     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)

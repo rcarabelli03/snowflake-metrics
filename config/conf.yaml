@@ -1,0 +1,108 @@
+paths:
+  image_directory: "/mnt/f/davos_1/11-17_1-57-46/" # 11-17_2-29-24
+  output_directory: "/mnt/f/snowflake_analysis_plots"
+
+constants:
+  pixel_size: 5.86 # micrometers per pixel
+  gravity: 9.81 # m/s^2 (not used currently)
+
+preprocessing:
+  thresholding:
+    method: "otsu" # options: "fixed", "otsu"
+    value: 50
+  sobel_detector:
+    kernel_size: 3
+  laplace_detector:
+    kernel_size: 3
+  gaussian_blur:
+    kernel_size: 7 # 5
+    sigma: 2.0
+  morphology:
+    opening:
+      kernel_size: 3
+      iterations: 2
+    erode:
+      kernel_size: 3
+      iterations: 2
+    dilate:
+      kernel_size: 3
+      iterations: 2
+
+analysis:
+  gaussian_blur:
+    kernel_size: 7 # 5
+    sigma: 2.0
+  flake_sharp_angle_thresh: 300 # pixels
+  sobel_detector:
+    kernel_size: 3
+  morphology:
+    opening:
+      kernel_size: 3
+      iterations: 2
+    closing:
+      kernel_size: 20
+      iterations: 3
+    erode:
+      kernel_size: 3
+      iterations: 2
+    dilate:
+      kernel_size: 3
+      iterations: 2
+  thresholding:
+    method: "fixed" # options: "fixed", "otsu"
+    value: 20
+  remove_small_objects:
+    enabled: true
+    small_object_size: 70 # pixels
+  regionprops:
+    min_area: 50 # pixels
+  contour_filtering:
+    min_area: 100 # pixels
+  find_contour_level: .5
+
+plot:
+  enable: true
+  save: true
+  display: false
+  max_display_area: 10000 # pixels  
+
+debug:
+  enabled: false
+  show_intermediate_images: false
+
+metrics:
+  metrics:
+    [
+      "centroid_x",
+      "centroid_y",
+      "axis_major_length",
+      "axis_minor_length",
+      "orientation_rad",
+      "aspect_ratio",
+      "diameter_um",
+      "complexity",
+      "area_um2",
+      "perimeter_um",
+      "solidity",
+    ]
+  snr_ddof: 0
+  stats:
+    [
+      "min_intensity",
+      "max_intensity",
+      "mean_intensity",
+      "std_intensity",
+      "variance_intensity",
+      "entropy",
+      "snr",
+      "mean_gradient_magnitude",
+      "median_gradient_magnitude",
+      "std_gradient_magnitude",
+      "mean_laplace",
+      "median_laplace",
+      "std_laplace",
+      "mean_angle",
+      "median_angle",
+      "std_angle",
+      "sharp_edge_count",
+    ]

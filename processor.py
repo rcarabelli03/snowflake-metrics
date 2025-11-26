@@ -36,19 +36,20 @@ def calculate_sharp_edges(image: np.ndarray, threshold: float = 10.0) -> int:
     return sharp_edges
 
     
-def SNR(a: MatLike, axis: int = None, ddof: int = 0) -> MatLike:
+def SNR(a: MatLike, axis: int | None = None, ddof: int = 0) -> MatLike:
     a = np.asanyarray(a)
     m = a.mean(axis)
     sd = a.std(axis=axis, ddof=ddof)
     return np.where(sd == 0, 0, m/sd)
 
-def preprocess_image(image: np.ndarray) -> tuple[np.ndarray, float]:    
+def preprocess_image(image: np.ndarray, config: dict) -> tuple[np.ndarray, float]:    
+    g_ksize = config["preprocessing"]["gaussian_blur"]["kernel_size"]
+    g_sigma = config["preprocessing"]["gaussian_blur"]["sigma"]
+    s_ksize = config["preprocessing"]["sobel_detector"]["kernel_size"]
+    lower = config["preprocessing"]["thresholding"]["value"]
+    n = config["preprocessing"]["morphology"]["opening"]["kernel_size"]
+    iterations = config["preprocessing"]["morphology"]["opening"]["iterations"]
     start_time = time.time_ns()
-
-    ## stuff
-    g_ksize = 11
-    g_sigma = 5
-    s_ksize = 3
     
     # smoothed_image = cv2.GaussianBlur(image, (25, 25), sigmaX=2, sigmaY=2)
     res = cv2.GaussianBlur(image, (g_ksize, g_ksize), g_sigma)
@@ -57,9 +58,11 @@ def preprocess_image(image: np.ndarray) -> tuple[np.ndarray, float]:
     # (_, _, res) = processor.sobel_detector(res, kernel_size=s_ksize)
     # normalize in-place (dst must be a MatLike according to type hints)
     cv2.normalize(src=res, dst=res, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-    _, thresh = cv2.threshold(res, 50, 255, cv2.THRESH_BINARY)
-    kernel = np.ones((3,3),np.uint8)
-    opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 2)
+    # apply binary thresholding
+    _, thresh = cv2.threshold(res, lower, 255, cv2.THRESH_BINARY)
+    # morphological opening to remove small objects
+    kernel = np.ones((n,n),np.uint8)
+    opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = iterations)
 
     end_time = time.time_ns()
     elapsed_time = end_time - start_time
@@ -71,15 +74,22 @@ def preprocess_image(image: np.ndarray) -> tuple[np.ndarray, float]:
     
     return (opening, elapsed_time)
 
-def image_stats(image: np.ndarray):
+def image_stats(image: np.ndarray, config: dict) -> list:
     """Compute basic statistics (min, max, mean, std, entropy, ...) for the image."""
     # Run detectors once and convert to numpy arrays with a numeric dtype so numpy functions accept them
-    _, _, sobel_mag = sobel_detector(image)
+    assert len(config) != 0, "Config for image_stats cannot be empty"
+    _, _, sobel_mag = sobel_detector(image=image,
+                                     kernel_size=config["preprocessing"]["sobel_detector"]["kernel_size"])
     sobel_mag = np.asarray(sobel_mag, dtype=float)
 
-    lap = np.asarray(laplace_detector(image), dtype=float)
-    angle = np.asarray(gradient_angle(image), dtype=float)
-
+    lap = np.asarray(laplace_detector(image=image,
+                                        kernel_size=config["preprocessing"]["laplace_detector"]["kernel_size"]),
+                                        dtype=float)
+    angle = np.asarray(gradient_angle(image=image,
+                                        kernel_size=config["preprocessing"]["sobel_detector"]["kernel_size"]),
+                                        dtype=float)
+    
+    # TODO: use config to select which stats to compute
     return [np.min(image),
             np.max(image),
             np.mean(image),
