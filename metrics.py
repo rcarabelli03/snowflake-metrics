@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import cv2
+import skimage as ski
 from skimage.measure import label, regionprops, find_contours
 from skimage import filters, morphology
 from processor import calculate_sharp_edges, gamma, gradient_angle
@@ -35,10 +36,20 @@ class Analyser:
         
         self.enable_remove_small = config["analysis"]["remove_small_objects"]["enabled"]
         
-        self.plot = config["analysis"]["plot"]["enable"]
-        self.display_plot = config["analysis"]["plot"]["display"]
-        self.save = config["analysis"]["plot"]["save"]
+        self.plot = config["plot"]["enable"]
+        self.display_plot = config["plot"]["display"]
+        self.save = config["plot"]["save"]
         self.show_intermediate = config["debug"]["show_intermediate_images"]
+        
+        if config["debug"]["enabled"]:
+            print(f"""Analyser initialized with config:
+            Gaussian Blur: kernel_size={self.ksize}, sigma={self.sigma}
+            Thresholding value: {self.thresh}
+            Sharp angle threshold: {self.sharp_angle_thresh}
+            Remove small objects enabled: {self.enable_remove_small}, size: {self.scale}
+            Morphological Closing: kernel_size={self.closing_ksize}, iterations={self.iterations}
+            Plotting enabled: {self.plot}, display: {self.display_plot}, save: {self.save}
+            Debug show intermediate images: {self.show_intermediate}""")
         
     def analyse_image(self, image: np.ndarray, folder_desc: str = "") -> tuple[list, float, typing.Optional[str]]:
                 
@@ -49,7 +60,8 @@ class Analyser:
         pixel_size = 5.86 # in [um]
         
         original_img = image.copy()
-        # Get image from queue and flip it 180 degrees
+        # Remove low intensity noise
+        image = np.clip(image, 5, 255)
 
         # Remove the high frequency noise with the gaussian blur filter
         # smoothed_image = cv2.GaussianBlur(image, (25, 25), sigmaX=2, sigmaY=2)
@@ -93,14 +105,17 @@ class Analyser:
                                                 kernel,
                                                 iterations=self.iterations)
             
-            cv2.imshow("Closed Binary Image", closed_binary_image.astype(np.uint8)*255)
-            cv2.waitKey(1)
+            if self.show_intermediate:
+                cv2.imshow("Closed Binary Image", closed_binary_image.astype(np.uint8)*255)
+                cv2.waitKey(1)
             
             label_img = label(closed_binary_image)
             snowflakes = regionprops(label_img)
             # Initialize a list to store characteristic values of snowflakes
             snowflakes.sort(key=lambda x: x.equivalent_diameter_area, reverse=True)
             flake = 0 # local snowflake counter, resets for each image
+            
+            print(type(snowflakes))
 
             for snowflake in snowflakes:
                 # Only save the snowflakes that are bigger than 50 pixel in diameter
@@ -125,9 +140,6 @@ class Analyser:
                     
                     if self.save:
                         os.makedirs(snowflake_path, exist_ok=True)
-                        write_image(original_img, save_path=snowflake_path, filename=f"snowflake_{snowflake_nr}_{flake}_original_image_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png")
-                        write_image(normalised_image, save_path=snowflake_path, filename=f"snowflake_{snowflake_nr}_{flake}_normalised_image_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png")
-                        write_image(inversion, save_path=snowflake_path, filename=f"snowflake_{snowflake_nr}_{flake}_inverted_image_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png")
                         write_image(sliced_img, save_path=snowflake_path, filename=f"snowflake_{snowflake_nr}_{flake}_cropped_flake_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png")
                         write_image(normalised_slice, save_path=snowflake_path, filename=f"snowflake_{snowflake_nr}_{flake}_normalised_cropped_flake_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png")
                         write_image(snowflake_img.astype(np.uint8)*255, save_path=snowflake_path, filename=f"snowflake_{snowflake_nr}_{flake}_binary_image_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png")
@@ -176,7 +188,7 @@ class Analyser:
                         df.to_csv(csv_filepath)
                     
                     if self.plot:
-                        plot_ellipse_overlay(gamma(image,0.4), tmp, 1, save=self.save, save_path=snowflake_path, flake_id=flake)
+                        plot_ellipse_overlay(gamma(image,0.4), tmp, 1, visual=True, save=self.save, save_path=snowflake_path, flake_id=flake)
         else:
             err("Image discarded due to insufficient sharp edges.")
             
@@ -186,94 +198,64 @@ class Analyser:
             
 
         return (data, elapsed, subfolder)
+    
+    # def _analysis_algorithm_1(self, image: np.ndarray, save_path: str) -> list:
+    #     data = []
+    #     # Remove the high frequency noise with the gaussian blur filter
+    #     res = cv2.GaussianBlur(image, (self.ksize, self.ksize), sigmaX=self.sigma, sigmaY=self.sigma) # 11,5
 
-
-overlap_prevention_counter = 0
-
-def alternative_analyse_image(image: np.ndarray, config: dict, save_path: str = "", folder_desc: str = "") -> list:
-    
-    ## stuff
-    ksize = 11
-    sigma = 5
-    s_ksize = 3
-    threshold = 1000
-    threshold_angle = 50
-    global overlap_prevention_counter
-    overlap_prevention_counter += 1
-    
-    res = cv2.GaussianBlur(image, (ksize, ksize), sigmaX=sigma, sigmaY=sigma) # 11,5
-    res = gradient_angle(res, kernel_size=s_ksize).astype(np.float32)
-    assert res is not None, "Gradient angle computation failed."
-    print(f"Gradient angle stats: min={np.min(res)}, max={np.max(res)}, mean={np.mean(res)}, std={np.std(res)}")
-    
-    path = os.path.join(save_path, folder_desc)
-    if folder_desc == "default": # FIXME: remove in future
-        path = os.path.join(path, f"flake_alternative_{overlap_prevention_counter}")
-    os.makedirs(path, exist_ok=True)
-    # calculate histogram
-    plot_histogram(res, title="gradient_angle_histogram", xlabel="Angle (degrees)", ylabel="Frequency", bins=256, visual=False, save=True, save_path=path)
-    res = cv2.normalize(res, res, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-    
-    sharp_edges = int(np.sum(res > threshold_angle))
-    print(f"Number of sharp edges (>{threshold_angle}): {sharp_edges}")
-    
-    
-    _, thresh = cv2.threshold(res, 50, 255, cv2.THRESH_BINARY)
-    kernel = np.ones((3,3),np.uint8)
-    opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 2)
-    if sharp_edges > threshold:
-        cv2.imwrite(os.path.join(path, "reference_selected_by_grad.png"), image)
-        cv2.imwrite(os.path.join(path, "selected_by_grad_angle.png"), res)
-        cv2.imwrite(os.path.join(path, "selected_by_grad_angle_binary.png"), opening)
+    #     # Save image if the amount of sharp edges in it are above a defined threshold
+    #     cv2.normalize(src=res, dst=res, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+    #     number_of_sharp_edges = calculate_sharp_edges(res)
         
-        scale = config["analysis"]["remove_small_objects"]["small_object_size"]
-        if config["analysis"]["remove_small_objects"]["enabled"]:
-            res = morphology.remove_small_objects(res, scale)
-            res = morphology.remove_small_holes(res, scale)
+    #     normalised_image = res.copy()
+    #     inversion = cv2.bitwise_not(res)
+        
+    #     if self.show_intermediate:
+    #         cv2.imshow("Normalisation", normalised_image.astype(np.uint8))
+    #         cv2.imshow("Inversion", inversion.astype(np.uint8))
+    #         cv2.waitKey(1)
+        
+    #     if self.save:
+    #         write_image(normalised_image, save_path=save_path, filename=f"snowflake_{snowflake_nr}_{flake}_normalised_image_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png")
+    #         write_image(inversion, save_path=save_path, filename=f"snowflake_{snowflake_nr}_{flake}_inverted_image_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png")
             
-        # Morphological closing to fill small holes inside snowflakes
-        n = config["analysis"]["morphology"]["closing"]["kernel_size"]
-        iterations = config["analysis"]["morphology"]["closing"]["iterations"]
-        
-        kernel = np.ones((n, n), np.uint8)
-        closed_binary_image = cv2.morphologyEx(res.astype(np.uint8), # opening
-                                               cv2.MORPH_CLOSE,
-                                               kernel,
-                                               iterations=iterations)
-        
-        cv2.imshow("Closed Binary Image", closed_binary_image.astype(np.uint8)*255)
-        cv2.waitKey(1)
-        
-        label_img = label(closed_binary_image)
-        snowflakes = regionprops(label_img)
-        # Initialize a list to store characteristic values of snowflakes
-        snowflakes.sort(key=lambda x: x.equivalent_diameter_area, reverse=True)
-        flake = 0 # local snowflake counter, resets for each image
-
-        for snowflake in snowflakes:
-            # Only save the snowflakes that are bigger than 50 pixel in diameter
-            if snowflake.equivalent_diameter_area >= scale: # 100
-                flake += 1
-                label_i = snowflake.label
-                contour = find_contours(label_img == label_i, config["analysis"]["find_contour_level"])
+    #     if number_of_sharp_edges > self.sharp_angle_thresh:
+    #         _, res = cv2.threshold(res, self.thresh, 255, cv2.THRESH_OTSU)
+    #         if self.enable_remove_small:
+    #             res = morphology.remove_small_objects(res, self.scale)
+    #             res = morphology.remove_small_holes(res, self.scale)
                 
-                snowflake_img = snowflake.image_filled
-                bbox = snowflake.bbox
-                sliced_img = image[bbox[0]:bbox[2], bbox[1]:bbox[3]]
-                normalised_slice = res[bbox[0]:bbox[2], bbox[1]:bbox[3]].astype(np.uint8)
-                # cv2.imshow("Detected Snowflake", snowflake_img.astype(np.uint8)*255)
-                # print(f"Intensity average: {np.mean(sliced_img)}, std: {np.std(sliced_img)}")
-                snowflake_path = path
-                isolated_flake = f"alt_snowflake_isolated_{snowflake_nr}_{flake}_{int(snowflake.equivalent_diameter_area)}um.png"
-                normalised_flake = f"alt_snowflake_{snowflake_nr}_{flake}_normalised_slice_image_{int(snowflake.equivalent_diameter_area)}um.png"
-                binarised_isolated_flake = f"alt_snowflake_{snowflake_nr}_{flake}_binary_image_{int(snowflake.equivalent_diameter_area)}um.png"
-                isolated_flake = os.path.join(snowflake_path, isolated_flake)
-                normalised_flake = os.path.join(snowflake_path, normalised_flake)
-                binarised_isolated_flake = os.path.join(snowflake_path, binarised_isolated_flake)
-                cv2.imwrite(isolated_flake, sliced_img)
-                cv2.imwrite(normalised_flake, normalised_slice)
-                cv2.imwrite(binarised_isolated_flake, snowflake_img.astype(np.uint8)*255)
-        
+    #         # Morphological closing to fill small holes inside snowflakes
+    #         kernel = np.ones((self.closing_ksize, self.closing_ksize), np.uint8)
+    #         closed_binary_image = cv2.morphologyEx(res.astype(np.uint8),
+    #                                             cv2.MORPH_CLOSE,
+    #                                             kernel,
+    #                                             iterations=self.iterations)
+            
+    #         if self.show_intermediate:
+    #             cv2.imshow("Closed Binary Image", closed_binary_image.astype(np.uint8)*255)
+    #             cv2.waitKey(1)
+            
+    #         label_img = label(closed_binary_image)
+    #         data = regionprops(label_img)
+            
+    #     return data
     
-    return []
+    # def _analysis_algorithm_2(self, image: np.ndarray, config: dict, save_path: str = "", folder_desc: str = "") -> list:
+    #     # Placeholder for a second analysis algorithm
+    #     data = []
+    #     image = np.clip(image, 5, 255)
+            
+    #     thresholds = ski.filters.threshold_multiotsu(image, classes=3)
+    #     cells = image > thresholds[0]
 
+    #     label_img = label(cells)
+    #     snowflakes = regionprops(label_img)
+        
+    #     for snowflake in snowflakes:
+    #         if snowflake.area < 600:
+    #             continue
+            
+            
+    #     return data

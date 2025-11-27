@@ -17,7 +17,8 @@ from src.utils.consolecolors import bcolors
 from src.utils.utils import initial_setup, info, warn, err, header
 from src.config import load_config
 from processor import preprocess_image, gamma, image_stats
-from metrics import Analyser, alternative_analyse_image
+from metrics import Analyser
+from experimental import multi_otsu_thresholding
 
 # base_path = "../images/pictures_Test"
 # dir_list = ["10-7_15-42-5/", "10-7_15-45-41/", "10-7_15-51-6/", "10-28_15-27-6"]
@@ -65,22 +66,25 @@ if __name__=="__main__":
                 continue
             
             # Show slightly improved contrast using CLAHE and gamma correction for visual inspection
-            frame: MatLike = res.copy()
-            cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(src=frame)
-            frame = gamma(frame, gamma=0.8)
-            cv2.imshow("CLAHE Result", frame)
-            cv2.waitKey(1)
+            # frame: MatLike = res.copy()
+            # cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(src=frame)
+            # frame = gamma(frame, gamma=0.8)
+            # cv2.imshow("CLAHE Result", frame)
+            # cv2.waitKey(1)
             
             # Preprocess image and analyse
             processed_image, elapsed_processor      = preprocess_image(image=res, config=config)
             stats                                   = image_stats(image=res, config=config) # returns an np array
             metrics, elapsed_analyser, subfolder    = analyser.analyse_image(image=res, folder_desc=f"{get_str_image_id_from_path(img_path)}")
             
-            print(f"Subfolder used: {subfolder}")
-            if subfolder is None:
-                subfolder = "default"
+            # multi_otsu_thresholding(image=res)
+            
+            # print(f"Subfolder used: {subfolder}")
+            # if subfolder is None:
+            #     subfolder = "default"
                                 
-            alternative_metrics = alternative_analyse_image(image=res, config=config, save_path=save_path, folder_desc=subfolder)
+            # alternative_metrics = alternative_analyse_image(image=res, config=config, save_path=save_path, folder_desc=subfolder)
+            
             # debug: print metrics
             print(f"Metrics for {os.path.basename(img_path)}: {metrics}")
             

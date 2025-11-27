@@ -29,6 +29,7 @@ def get_args():
     parser.add_argument(
         "--debug",
         action="store_true",
+        default=False,
         help="Enable debug mode with additional outputs.",
     )
     

@@ -6,6 +6,16 @@ constants:
   pixel_size: 5.86 # micrometers per pixel
   gravity: 9.81 # m/s^2 (not used currently)
 
+plot:
+  enable: true
+  save: false
+  display: false
+  max_display_area: 10000 # pixels  
+
+debug:
+  enabled: true
+  show_intermediate_images: true
+
 preprocessing:
   thresholding:
     method: "otsu" # options: "fixed", "otsu"
@@ -59,16 +69,6 @@ analysis:
   contour_filtering:
     min_area: 100 # pixels
   find_contour_level: .5
-
-plot:
-  enable: true
-  save: true
-  display: false
-  max_display_area: 10000 # pixels  
-
-debug:
-  enabled: false
-  show_intermediate_images: false
 
 metrics:
   metrics:
