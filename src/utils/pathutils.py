@@ -3,7 +3,7 @@ from os import walk
 import typing
 import numpy as np
 import cv2
-from src.utils.utils import info, warn, err, header
+from src.utils.print_wrapper import info, warn, err, header
 
 def get_image_paths(directory: str) -> typing.List[str]:
     if not os.path.exists(directory):

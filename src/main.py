@@ -11,14 +11,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
 
-from src.utils.pathutils import get_snowflake_id_from_path, get_image_paths, get_image_filename, get_filtered_image_paths, __deprecated___get_image_paths_filtered, get_image_folder, get_str_image_id_from_path
-from src.utils.plotutils import plot_ellipse_overlay, plot_histogram
-from src.utils.consolecolors import bcolors
-from src.utils.utils import initial_setup, info, warn, err, header
-from src.config import load_config
-from processor import preprocess_image, gamma, image_stats
-from metrics import Analyser
-from experimental import multi_otsu_thresholding
+from utils.pathutils import get_snowflake_id_from_path, get_image_paths, get_image_filename, get_filtered_image_paths, __deprecated___get_image_paths_filtered, get_image_folder, get_str_image_id_from_path
+from utils.io.plotutils import plot_ellipse_overlay, plot_histogram
+from utils.consolecolors import bcolors
+from utils.print_wrapper import initial_setup, info, warn, err, header
+from utils.configurator.config import load_config
+from processing.processor import preprocess_image, gamma, image_stats
+from processing.metrics import Analyser
+from processing.experimental import multi_otsu_thresholding
 
 # base_path = "../images/pictures_Test"
 # dir_list = ["10-7_15-42-5/", "10-7_15-45-41/", "10-7_15-51-6/", "10-28_15-27-6"]

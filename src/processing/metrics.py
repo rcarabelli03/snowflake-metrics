@@ -4,14 +4,15 @@ import cv2
 import skimage as ski
 from skimage.measure import label, regionprops, find_contours
 from skimage import filters, morphology
-from processor import calculate_sharp_edges, gamma, gradient_angle
+from src.processing.processor import calculate_sharp_edges, gamma, gradient_angle
 
 import time
 import typing
 import pandas as pd
 import math
-from src.utils.plotutils import plot_ellipse_overlay, skimage_show_plot, plot_histogram, write_image
-from src.utils.utils import info, warn, err, header
+from utils.io.plotutils import plot_ellipse_overlay, skimage_show_plot, plot_histogram, write_image
+from utils.print_wrapper import info, warn, err, header
+from utils.results_wrapper import IntermediateImage, AnalysisResult
 
 snowflake_nr = 0
 
@@ -115,8 +116,6 @@ class Analyser:
             snowflakes.sort(key=lambda x: x.equivalent_diameter_area, reverse=True)
             flake = 0 # local snowflake counter, resets for each image
             
-            print(type(snowflakes))
-
             for snowflake in snowflakes:
                 # Only save the snowflakes that are bigger than 50 pixel in diameter
                 if snowflake.equivalent_diameter_area >= self.scale: # 100
@@ -199,63 +198,72 @@ class Analyser:
 
         return (data, elapsed, subfolder)
     
-    # def _analysis_algorithm_1(self, image: np.ndarray, save_path: str) -> list:
-    #     data = []
-    #     # Remove the high frequency noise with the gaussian blur filter
-    #     res = cv2.GaussianBlur(image, (self.ksize, self.ksize), sigmaX=self.sigma, sigmaY=self.sigma) # 11,5
+    def _analysis_algorithm_1(self, image: np.ndarray) -> AnalysisResult:
+        data = []
+        intermediates = []
+        
+        res = np.clip(image, 5, 255)
+        # Remove the high frequency noise with the gaussian blur filter
+        res = cv2.GaussianBlur(res, (self.ksize, self.ksize), sigmaX=self.sigma, sigmaY=self.sigma) # 11,5
 
-    #     # Save image if the amount of sharp edges in it are above a defined threshold
-    #     cv2.normalize(src=res, dst=res, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-    #     number_of_sharp_edges = calculate_sharp_edges(res)
+        # Save image if the amount of sharp edges in it are above a defined threshold
+        cv2.normalize(src=res, dst=res, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        number_of_sharp_edges = calculate_sharp_edges(res)
         
-    #     normalised_image = res.copy()
-    #     inversion = cv2.bitwise_not(res)
+        normalised_image = res.copy()
+        inversion = cv2.bitwise_not(res)
         
-    #     if self.show_intermediate:
-    #         cv2.imshow("Normalisation", normalised_image.astype(np.uint8))
-    #         cv2.imshow("Inversion", inversion.astype(np.uint8))
-    #         cv2.waitKey(1)
-        
-    #     if self.save:
-    #         write_image(normalised_image, save_path=save_path, filename=f"snowflake_{snowflake_nr}_{flake}_normalised_image_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png")
-    #         write_image(inversion, save_path=save_path, filename=f"snowflake_{snowflake_nr}_{flake}_inverted_image_{int(snowflake.equivalent_diameter_area*pixel_size)}um.png")
+        if self.show_intermediate:
+            cv2.imshow("Normalisation", normalised_image.astype(np.uint8))
+            cv2.imshow("Inversion", inversion.astype(np.uint8))
+            cv2.waitKey(1)
             
-    #     if number_of_sharp_edges > self.sharp_angle_thresh:
-    #         _, res = cv2.threshold(res, self.thresh, 255, cv2.THRESH_OTSU)
-    #         if self.enable_remove_small:
-    #             res = morphology.remove_small_objects(res, self.scale)
-    #             res = morphology.remove_small_holes(res, self.scale)
+        if number_of_sharp_edges > self.sharp_angle_thresh:
+            _, res = cv2.threshold(res, self.thresh, 255, cv2.THRESH_OTSU)
+            
+            if self.enable_remove_small:
+                res = morphology.remove_small_objects(res, self.scale)
+                res = morphology.remove_small_holes(res, self.scale)
                 
-    #         # Morphological closing to fill small holes inside snowflakes
-    #         kernel = np.ones((self.closing_ksize, self.closing_ksize), np.uint8)
-    #         closed_binary_image = cv2.morphologyEx(res.astype(np.uint8),
-    #                                             cv2.MORPH_CLOSE,
-    #                                             kernel,
-    #                                             iterations=self.iterations)
+            # Morphological closing to fill small holes inside snowflakes
+            kernel = np.ones((self.closing_ksize, self.closing_ksize), np.uint8)
+            closed_binary_image = cv2.morphologyEx(res.astype(np.uint8),
+                                                cv2.MORPH_CLOSE,
+                                                kernel,
+                                                iterations=self.iterations)
             
-    #         if self.show_intermediate:
-    #             cv2.imshow("Closed Binary Image", closed_binary_image.astype(np.uint8)*255)
-    #             cv2.waitKey(1)
+            if self.show_intermediate:
+                cv2.imshow("Closed Binary Image", closed_binary_image.astype(np.uint8)*255)
+                cv2.waitKey(1)
             
-    #         label_img = label(closed_binary_image)
-    #         data = regionprops(label_img)
+            label_img = label(closed_binary_image)
+            data = regionprops(label_img)
             
-    #     return data
+            intermediates = [
+                IntermediateImage("normalised", normalised_image),
+                IntermediateImage("inversion", inversion),
+            ]
+            
+        return AnalysisResult(
+            pipeline_name="analysis_algorithm_1",
+            detections=data,
+            intermediates=intermediates
+        )
     
-    # def _analysis_algorithm_2(self, image: np.ndarray, config: dict, save_path: str = "", folder_desc: str = "") -> list:
-    #     # Placeholder for a second analysis algorithm
-    #     data = []
-    #     image = np.clip(image, 5, 255)
+    def _analysis_algorithm_2(self, image: np.ndarray, config: dict, save_path: str = "", folder_desc: str = "") -> list:
+        # Placeholder for a second analysis algorithm
+        data = []
+        image = np.clip(image, 5, 255)
             
-    #     thresholds = ski.filters.threshold_multiotsu(image, classes=3)
-    #     cells = image > thresholds[0]
+        thresholds = ski.filters.threshold_multiotsu(image, classes=3)
+        cells = image > thresholds[0]
 
-    #     label_img = label(cells)
-    #     snowflakes = regionprops(label_img)
+        label_img = label(cells)
+        snowflakes = regionprops(label_img)
         
-    #     for snowflake in snowflakes:
-    #         if snowflake.area < 600:
-    #             continue
+        for snowflake in snowflakes:
+            if snowflake.area < 600:
+                continue
             
             
-    #     return data
+        return data
