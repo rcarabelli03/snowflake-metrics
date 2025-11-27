@@ -75,7 +75,7 @@ if __name__=="__main__":
             # Preprocess image and analyse
             processed_image, elapsed_processor      = preprocess_image(image=res, config=config)
             stats                                   = image_stats(image=res, config=config) # returns an np array
-            metrics, elapsed_analyser, subfolder    = analyser.analyse_image(image=res, folder_desc=f"{get_str_image_id_from_path(img_path)}")
+            metrics, elapsed_analyser    = analyser.analyse_image(image=res, folder_desc=f"{get_str_image_id_from_path(img_path)}")
             
             # multi_otsu_thresholding(image=res)
             
@@ -86,7 +86,10 @@ if __name__=="__main__":
             # alternative_metrics = alternative_analyse_image(image=res, config=config, save_path=save_path, folder_desc=subfolder)
             
             # debug: print metrics
-            print(f"Metrics for {os.path.basename(img_path)}: {metrics}")
+            if metrics is None:
+                warn(f"No metrics extracted for image: {img_path}")
+                continue
+            print(f"Metrics for {os.path.basename(img_path)}:\n{metrics}")
             
             df.loc[len(df)] = np.concatenate((stats, [name]))
             

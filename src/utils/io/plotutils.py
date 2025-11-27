@@ -16,16 +16,19 @@ def write_image(img: MatLike, save_path: str, filename: str) -> None:
     cv2.imwrite(filepath, img)
     
 
-def plot_ellipse_overlay(img: MatLike, data: list, display_time: int, visual=False, save=None, save_path=None, flake_id=None) -> None:
+def plot_ellipse_overlay(img: MatLike, data: dict, display_time: int, visual=False, save=None, save_path=None, flake_id=None) -> None:
     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-    for i in range(0, len(data), 11):
-        centroid = (np.round(data[i]).astype(int), np.round(data[i+1]).astype(int))
-        cv2.circle(img, centroid, 5, (0,0, 255), -1)        
-        end_short = (np.round(centroid[0] + data[i+3]/2 * math.cos(data[i+4])).astype(int),
-                np.round(centroid[1] - data[i+3]/2 * math.sin(data[i+4])).astype(int))
-        cv2.line(img, centroid, end_short, (255,0,0),5)
-        cv2.ellipse(img, centroid, (np.round(data[i+3]/2).astype(int), np.round(data[i+2]/2).astype(int)),
-                    -math.degrees(data[i+4]), 0, 360, (0,0,255), 2)
+    
+    centroid = (np.round(data["centroid_x"]).astype(int), np.round(data["centroid_y"]).astype(int))
+    cv2.circle(img, centroid, 5, (0,0, 255), -1)        
+    end_short = (np.round(centroid[0] + data["axis_minor_length"]/2 * math.cos(data["orientation"])).astype(int),
+            np.round(centroid[1] - data["axis_minor_length"]/2 * math.sin(data["orientation"])).astype(int))
+    end_long = (np.round(centroid[0] - data["axis_major_length"]/2 * math.sin(data["orientation"])).astype(int),
+            np.round(centroid[1] - data["axis_major_length"]/2 * math.cos(data["orientation"])).astype(int))
+    cv2.line(img, centroid, end_short, (255,0,0),5)
+    cv2.line(img, centroid, end_long, (255,0,0),5)
+    cv2.ellipse(img, centroid, (np.round(data["axis_minor_length"]/2).astype(int), np.round(data["axis_major_length"]/2).astype(int)),
+                -math.degrees(data["orientation"]), 0, 360, (0,0,255), 2)
     
     if visual:
         cv2.imshow("Ellipses Overlay", img)

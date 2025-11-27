@@ -1,7 +1,7 @@
 import os
 import time
 import typing
-from src.utils.consolecolors import bcolors
+from utils.consolecolors import bcolors
 
 def initial_setup(image_path: str, out_path: str) -> typing.Tuple[str, str]:
     run_number = time.strftime("%Y-%m-%d_%a_%H-%M-%S", time.localtime())

@@ -8,9 +8,9 @@ constants:
 
 plot:
   enable: true
-  save: false
+  save: true
   display: false
-  max_display_area: 10000 # pixels  
+  max_display_area: 10000 # pixels
 
 debug:
   enabled: true
@@ -73,18 +73,32 @@ analysis:
 metrics:
   metrics:
     [
-      "centroid_x",
-      "centroid_y",
+      "centroid",
+      "centroid_local",
       "axis_major_length",
       "axis_minor_length",
-      "orientation_rad",
-      "aspect_ratio",
-      "diameter_um",
-      "complexity",
-      "area_um2",
-      "perimeter_um",
+      "orientation",
+      "equivalent_diameter_area",
+      "area",
+      "area_convex",
+      "perimeter",
+      "feret_diameter_max",
       "solidity",
     ]
+  # metrics:
+  #   [
+  #     "centroid_x",
+  #     "centroid_y",
+  #     "axis_major_length",
+  #     "axis_minor_length",
+  #     "orientation_rad",
+  #     "aspect_ratio",
+  #     "diameter_um",
+  #     "complexity",
+  #     "area_um2",
+  #     "perimeter_um",
+  #     "solidity",
+  #   ]
   snr_ddof: 0
   stats:
     [
