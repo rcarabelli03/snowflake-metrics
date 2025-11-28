@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 import numpy as np
+import cv2
 from utils.io.plotutils import write_image
 
 @dataclass
@@ -28,6 +29,16 @@ class AnalysisResult:
     @property
     def has_detections(self) -> bool:
         return len(self.detections) > 0
+    
+    @property
+    def detection_count(self) -> int:
+        return len(self.detections)
+    
+    def show_intermediates(self, display_time: int = 1) -> None:
+        """Displays all intermediate images using cv2.imshow."""
+        for intermediate in self.intermediates:
+            cv2.imshow(intermediate.name, intermediate.image.astype(np.uint8)*255)
+        cv2.waitKey(display_time)
     
     def save(self, save_path: str) -> None:
         """Saves the labelled image and intermediate images to the specified path."""

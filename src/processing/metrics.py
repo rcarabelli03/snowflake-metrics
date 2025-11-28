@@ -167,34 +167,30 @@ class Analyser:
         res = cv2.GaussianBlur(res, (self.ksize, self.ksize), sigmaX=self.sigma, sigmaY=self.sigma) # 11,5
 
         # Save image if the amount of sharp edges in it are above a defined threshold
+        number_of_sharp_edges, _ = calculate_sharp_edges(image=res)
+        # NOTE: normalise before sharp edge calculation to increase acceptance rate
         cv2.normalize(src=res, dst=res, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-        number_of_sharp_edges, sharp_edges_image = calculate_sharp_edges(res)
+        # Gives a nicer visual representation of the edges
+        _, sharp_edges_image = calculate_sharp_edges(image=res)
         
         normalised_image = res.copy()
+        image_for_overlay = res.copy()
         inversion = cv2.bitwise_not(res)
-        
-        if self.show_intermediate:
-            cv2.imshow("Normalisation", normalised_image.astype(np.uint8))
-            cv2.imshow("Inversion", inversion.astype(np.uint8))
-            cv2.waitKey(1)
             
         if number_of_sharp_edges > self.sharp_angle_thresh:
-            header(f"Image accepted for analysis: {number_of_sharp_edges} sharp edges detected.")
+            info(f"Image accepted for analysis: {number_of_sharp_edges} sharp edges detected.")
             _, res = cv2.threshold(res, self.thresh, 255, cv2.THRESH_OTSU)
             
             # overlay thresh and gradient on original for debugging
-            alpha = 0.5
-            overlay_thresh = cv2.addWeighted(res.astype(np.uint8), alpha, normalised_image.astype(np.uint8), 1-alpha, 0)
-            overlay_gradient = cv2.addWeighted(sharp_edges_image.astype(np.uint8), alpha, normalised_image.astype(np.uint8), 1-alpha, 0)
+            alpha = 0.6
+            overlay_thresh = cv2.addWeighted(res.astype(np.uint8), alpha, image.astype(np.uint8), 1-alpha, 0)
+            overlay_thresh_normalised = cv2.addWeighted(res.astype(np.uint8), alpha, image_for_overlay.astype(np.uint8), 1-alpha, 0)
+            overlay_gradient = cv2.addWeighted(sharp_edges_image.astype(np.uint8), alpha, image_for_overlay.astype(np.uint8), 1-alpha, 0)
             # the same but grad is in different color channel to original
             overlay_gradient_color = cv2.cvtColor(normalised_image.astype(np.uint8), cv2.COLOR_GRAY2BGR)
-            overlay_gradient_color[:, :, 1] = cv2.addWeighted(sharp_edges_image.astype(np.uint8), alpha, normalised_image.astype(np.uint8), 1-alpha, 0)
+            overlay_gradient_color[:, :, 1] = cv2.addWeighted(sharp_edges_image.astype(np.uint8), alpha, image_for_overlay.astype(np.uint8), 1-alpha, 0)
             overlay_gradient_color[:, :, 0] = normalised_image.astype(np.uint8)
             overlay_gradient_color[:, :, 2] = normalised_image.astype(np.uint8)
-            if self.show_intermediate:
-                cv2.imshow("Threshold Overlay", overlay_thresh)
-                cv2.imshow("Gradient Overlay", overlay_gradient)
-                cv2.waitKey(1)
             
             if self.enable_remove_small:
                 res = morphology.remove_small_objects(res, self.scale)
@@ -207,9 +203,6 @@ class Analyser:
                                                 kernel,
                                                 iterations=self.iterations)
             
-            if self.show_intermediate:
-                cv2.imshow("Closed Binary Image", closed_binary_image.astype(np.uint8)*255)
-                cv2.waitKey(1)
             
             label_img = label(closed_binary_image)
             data = regionprops(label_img)
@@ -221,16 +214,21 @@ class Analyser:
                 IntermediateImage("inversion_image", inversion),
                 IntermediateImage("sharp_edges_image", sharp_edges_image),
                 IntermediateImage("overlay_threshold", overlay_thresh),
+                IntermediateImage("overlay_threshold_normalised", overlay_thresh_normalised),
                 IntermediateImage("overlay_gradient", overlay_gradient),
                 IntermediateImage("overlay_gradient_color", overlay_gradient_color),
             ]
             
-            return AnalysisResult(
+            result = AnalysisResult(
                 pipeline_name="analysis_algorithm_1",
                 detections=data,
                 labelled_image=label_img,
                 intermediates=intermediates
             )
+            if self.show_intermediate:
+                result.show_intermediates()
+            return result
+        
         # default
         err("Image discarded due to insufficient sharp edges.")
         return None

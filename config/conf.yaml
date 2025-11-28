@@ -11,13 +11,13 @@ plot:
   save: true
   display:
     matplotlib: false
-    cv2_ellipses: true
+    cv2_ellipses: false
     display_time: 1 # ms
   max_display_area: 10000 # pixels
 
 debug:
   enabled: true
-  show_intermediate_images: true
+  show_intermediate_images: false
 
 preprocessing:
   thresholding:
