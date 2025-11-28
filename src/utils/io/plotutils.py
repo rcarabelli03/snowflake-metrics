@@ -20,13 +20,13 @@ def plot_ellipse_overlay(img: MatLike, data: dict, display_time: int, visual=Fal
     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
     
     centroid = (np.round(data["centroid_x"]).astype(int), np.round(data["centroid_y"]).astype(int))
-    cv2.circle(img, centroid, 5, (0,0, 255), -1)        
     end_short = (np.round(centroid[0] + data["axis_minor_length"]/2 * math.cos(data["orientation"])).astype(int),
             np.round(centroid[1] - data["axis_minor_length"]/2 * math.sin(data["orientation"])).astype(int))
     end_long = (np.round(centroid[0] - data["axis_major_length"]/2 * math.sin(data["orientation"])).astype(int),
             np.round(centroid[1] - data["axis_major_length"]/2 * math.cos(data["orientation"])).astype(int))
     cv2.line(img, centroid, end_short, (255,0,0),5)
     cv2.line(img, centroid, end_long, (255,0,0),5)
+    cv2.circle(img, centroid, 5, (0,0, 255), -1)        
     cv2.ellipse(img, centroid, (np.round(data["axis_minor_length"]/2).astype(int), np.round(data["axis_major_length"]/2).astype(int)),
                 -math.degrees(data["orientation"]), 0, 360, (0,0,255), 2)
     

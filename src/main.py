@@ -73,17 +73,9 @@ if __name__=="__main__":
             # cv2.waitKey(1)
             
             # Preprocess image and analyse
-            processed_image, elapsed_processor      = preprocess_image(image=res, config=config)
-            stats                                   = image_stats(image=res, config=config) # returns an np array
-            metrics, elapsed_analyser    = analyser.analyse_image(image=res, folder_desc=f"{get_str_image_id_from_path(img_path)}")
-            
-            # multi_otsu_thresholding(image=res)
-            
-            # print(f"Subfolder used: {subfolder}")
-            # if subfolder is None:
-            #     subfolder = "default"
-                                
-            # alternative_metrics = alternative_analyse_image(image=res, config=config, save_path=save_path, folder_desc=subfolder)
+            processed_image, elapsed_processor = preprocess_image(image=res, config=config)
+            stats                              = image_stats(image=res, config=config) # returns an np array
+            metrics, elapsed_analyser          = analyser.analyse_image(image=res, folder_desc=f"{get_str_image_id_from_path(img_path)}")
             
             # debug: print metrics
             if metrics is None:

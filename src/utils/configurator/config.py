@@ -26,12 +26,12 @@ def get_args():
         help="Directory to save output results. Overrides config file if provided.",
     )
     
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        default=False,
-        help="Enable debug mode with additional outputs.",
-    )
+    # parser.add_argument(
+    #     "--debug",
+    #     action="store_true",
+    #     default=False,
+    #     help="Enable debug mode with additional outputs.",
+    # )
     
     # parser.add_argument(
     #     "--verbose",
@@ -65,8 +65,8 @@ def load_config():
         config["paths"]["output_directory"] = args.output_dir
     
     # Set debug and verbose flags
-    config["debug"]["enabled"] = args.debug
-    config["debug"]["show_intermediate_images"] = args.debug
+    # config["debug"]["enabled"] = args.debug
+    # config["debug"]["show_intermediate_images"] = args.debug
     
     if args.save_disabled:
         config["plot"]["save"] = False

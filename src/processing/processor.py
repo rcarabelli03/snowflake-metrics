@@ -28,12 +28,12 @@ def gradient_angle(image: MatLike, kernel_size: int = 3) -> MatLike:
     angle = cv2.phase(x_grad, y_grad, angleInDegrees=True)
     return angle
 
-def calculate_sharp_edges(image: np.ndarray, threshold: float = 10.0) -> int:
+def calculate_sharp_edges(image: np.ndarray, threshold: float = 10.0) -> tuple[int, np.ndarray]:
     grad_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=3)
     grad_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=3)
     grad_magnitude = cv2.magnitude(grad_x, grad_y)
     sharp_edges = int(np.sum(grad_magnitude > threshold))
-    return sharp_edges
+    return sharp_edges, grad_magnitude
 
     
 def SNR(a: MatLike, axis: int | None = None, ddof: int = 0) -> MatLike:

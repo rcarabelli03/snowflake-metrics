@@ -9,7 +9,10 @@ constants:
 plot:
   enable: true
   save: true
-  display: false
+  display:
+    matplotlib: false
+    cv2_ellipses: true
+    display_time: 1 # ms
   max_display_area: 10000 # pixels
 
 debug:

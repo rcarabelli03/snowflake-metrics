@@ -15,6 +15,7 @@ from utils.print_wrapper import info, warn, err, header
 from utils.results_wrapper import IntermediateImage, AnalysisResult
 
 snowflake_nr = 0
+H, W = (1200, 1920) 
 
 class Analyser:
     def __init__(self, config: dict, save_path: str = ""):
@@ -40,9 +41,12 @@ class Analyser:
         self.enable_remove_small = config["analysis"]["remove_small_objects"]["enabled"]
         
         self.plot = config["plot"]["enable"]
-        self.display_plot = config["plot"]["display"]
+        self.display_plot = config["plot"]["display"]["matplotlib"]
+        self.cv2_display = config["plot"]["display"]["cv2_ellipses"]
         self.save = config["plot"]["save"]
         self.show_intermediate = config["debug"]["show_intermediate_images"]
+        
+        self.previous_image: np.ndarray = np.ones((H, W), dtype=np.uint8) * 255  # initialize with a white image
         
         if config["debug"]["enabled"]:
             print(f"""Analyser initialized with config:
@@ -62,14 +66,19 @@ class Analyser:
         pixel_size = 5.86 # in [um]
         
         original_img = image.copy()
-        # Save image if the amount of sharp edges in it are above a defined threshold
+        if np.array_equal(image, self.previous_image):
+            warn("Identical image detected as previous one; skipping analysis to save computation time.")
+            return (None, 0.0)
+            
+        self.previous_image = image.copy()
+
+        # Run and time analysis algorithms
         start = time.time_ns()
         result = self._analysis_algorithm_1(image)
         end = time.time_ns()
         elapsed = end - start
         
         if result is None:
-            err("Image discarded due to insufficient sharp edges.")
             return (None, elapsed)
         
         if result.has_detections: # i mean, it should have detections if we got here            
@@ -90,6 +99,7 @@ class Analyser:
             )
             df_props = pd.DataFrame(props)
             df_sel = df_props[df_props['equivalent_diameter_area'] > self.scale]
+            
             df_sel = df_sel.reset_index(drop=True)
             # rename columns to have consistent naming (centroid and centroid_local)
             df_sel = df_sel.rename(columns={
@@ -114,13 +124,20 @@ class Analyser:
                 sliced_img = image[bbox[0]:bbox[2], bbox[1]:bbox[3]]
                 normalised_slice = normalised_image[bbox[0]:bbox[2], bbox[1]:bbox[3]]
                 
-                df_sel[f"gradient_angle_flake_{snowflake_nr}_{flake}"] = df_sel.apply(
-                    lambda _ : np.mean(gradient_angle(
-                        sliced_img,
-                        3
-                    ).astype(np.float32)),
-                    axis=1
-                )
+                avg_intensity = np.mean(sliced_img)
+                std_intensity = np.std(sliced_img)
+                df_sel[f"avg_intensity_flake_{snowflake_nr}_{flake}"] = avg_intensity
+                df_sel[f"std_intensity_flake_{snowflake_nr}_{flake}"] = std_intensity
+                
+                avg_gradient_angle = np.mean(gradient_angle(
+                    sliced_img,
+                    3
+                ).astype(np.float32))
+                
+                if avg_gradient_angle > 85.:
+                    header(f"High average gradient angle detected: {avg_gradient_angle:.2f} degrees for flake {snowflake_nr}_{flake}")
+                
+                df_sel[f"gradient_angle_flake_{snowflake_nr}_{flake}"] = avg_gradient_angle
         
                 # print(f"Intensity average: {np.mean(sliced_img)}, std: {np.std(sliced_img)}")
                 if self.save:
@@ -139,19 +156,19 @@ class Analyser:
                     plot_histogram(original_img, title=f"intensity_histogram_{snowflake_nr}_{flake}_original", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path)
                     plot_histogram(normalised_image, title=f"intensity_histogram_{snowflake_nr}_{flake}_normalised", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path)
                     
-                    plot_ellipse_overlay(gamma(image,0.4), tmp, 1, visual=True, save=self.save, save_path=path, flake_id=flake)
+                    plot_ellipse_overlay(gamma(image,0.4), tmp, 1, visual=self.cv2_display, save=self.save, save_path=path, flake_id=flake)
 
             return (df_sel, elapsed)
         return (None, elapsed)
     
     def _analysis_algorithm_1(self, image: np.ndarray) -> typing.Optional[AnalysisResult]:        
-        res = np.clip(image, 5, 255)
+        res = np.clip(image, 6, 255)
         # Remove the high frequency noise with the gaussian blur filter
         res = cv2.GaussianBlur(res, (self.ksize, self.ksize), sigmaX=self.sigma, sigmaY=self.sigma) # 11,5
 
         # Save image if the amount of sharp edges in it are above a defined threshold
         cv2.normalize(src=res, dst=res, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-        number_of_sharp_edges = calculate_sharp_edges(res)
+        number_of_sharp_edges, sharp_edges_image = calculate_sharp_edges(res)
         
         normalised_image = res.copy()
         inversion = cv2.bitwise_not(res)
@@ -162,7 +179,22 @@ class Analyser:
             cv2.waitKey(1)
             
         if number_of_sharp_edges > self.sharp_angle_thresh:
+            header(f"Image accepted for analysis: {number_of_sharp_edges} sharp edges detected.")
             _, res = cv2.threshold(res, self.thresh, 255, cv2.THRESH_OTSU)
+            
+            # overlay thresh and gradient on original for debugging
+            alpha = 0.5
+            overlay_thresh = cv2.addWeighted(res.astype(np.uint8), alpha, normalised_image.astype(np.uint8), 1-alpha, 0)
+            overlay_gradient = cv2.addWeighted(sharp_edges_image.astype(np.uint8), alpha, normalised_image.astype(np.uint8), 1-alpha, 0)
+            # the same but grad is in different color channel to original
+            overlay_gradient_color = cv2.cvtColor(normalised_image.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+            overlay_gradient_color[:, :, 1] = cv2.addWeighted(sharp_edges_image.astype(np.uint8), alpha, normalised_image.astype(np.uint8), 1-alpha, 0)
+            overlay_gradient_color[:, :, 0] = normalised_image.astype(np.uint8)
+            overlay_gradient_color[:, :, 2] = normalised_image.astype(np.uint8)
+            if self.show_intermediate:
+                cv2.imshow("Threshold Overlay", overlay_thresh)
+                cv2.imshow("Gradient Overlay", overlay_gradient)
+                cv2.waitKey(1)
             
             if self.enable_remove_small:
                 res = morphology.remove_small_objects(res, self.scale)
@@ -187,6 +219,10 @@ class Analyser:
                 IntermediateImage("closed_binary_image", closed_binary_image),
                 IntermediateImage("normalised_image", normalised_image),
                 IntermediateImage("inversion_image", inversion),
+                IntermediateImage("sharp_edges_image", sharp_edges_image),
+                IntermediateImage("overlay_threshold", overlay_thresh),
+                IntermediateImage("overlay_gradient", overlay_gradient),
+                IntermediateImage("overlay_gradient_color", overlay_gradient_color),
             ]
             
             return AnalysisResult(
@@ -196,6 +232,7 @@ class Analyser:
                 intermediates=intermediates
             )
         # default
+        err("Image discarded due to insufficient sharp edges.")
         return None
     
     def _analysis_algorithm_2(self, image: np.ndarray, config: dict, save_path: str = "", folder_desc: str = "") -> list:
