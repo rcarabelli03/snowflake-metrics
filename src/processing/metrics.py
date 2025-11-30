@@ -91,16 +91,15 @@ class Analyser:
             # extract data and sort by size
             snowflakes = result.detections
             snowflakes.sort(key=lambda x: x.equivalent_diameter_area, reverse=True)
-            snowflakes = [(s, flake_id) for flake_id, s in enumerate(snowflakes) if s.equivalent_diameter_area > self.scale]
+            snowflakes = [(s, potential_flake) for potential_flake, s in enumerate(snowflakes) if s.equivalent_diameter_area > self.scale]
             
             props = regionprops_table(                  # yes I know, this runs regionprops again, but i get a nice df, so whatever
                 label_image=result.labelled_image,
                 properties=self.props,
             )
             df_props = pd.DataFrame(props)
-            df_sel = df_props[df_props['equivalent_diameter_area'] > self.scale]
+            df_sel = df_props.sort_values(by="equivalent_diameter_area", ascending=False).reset_index(drop=True)
             
-            df_sel = df_sel.reset_index(drop=True)
             # rename columns to have consistent naming (centroid and centroid_local)
             df_sel = df_sel.rename(columns={
                 "centroid-0": "centroid_y",
@@ -112,10 +111,15 @@ class Analyser:
             df_sel["complexity"] = df_sel["perimeter"]/(df_sel["equivalent_diameter_area"]*math.pi)
             df_sel["aspect_ratio"] = df_sel["axis_minor_length"]/df_sel["axis_major_length"]
             
-            for snowflake, flake in snowflakes:
+            flake_id = 0
+            for snowflake, potential_flake in snowflakes:
                 snowflake_nr += 1
-                path = os.path.join(self.save_path, f"{snowflake_nr}_{flake}_" + folder_desc)
-                tmp = df_sel.iloc[flake].to_dict()
+                
+                path = os.path.join(self.save_path, f"{snowflake_nr}_{flake_id}_" + folder_desc)
+                tmp = df_sel.iloc[potential_flake].to_dict()
+                flake_metrics = df_sel[df_sel["equivalent_diameter_area"] == snowflake.equivalent_diameter_area]
+                if self.config["debug"]["enabled"]:
+                    print(flake_metrics)
                 
                 display_plot = self.display_plot if snowflake.equivalent_diameter_area*pixel_size < self.area_thresh else False
                 
@@ -126,8 +130,8 @@ class Analyser:
                 
                 avg_intensity = np.mean(sliced_img)
                 std_intensity = np.std(sliced_img)
-                df_sel[f"avg_intensity_flake_{snowflake_nr}_{flake}"] = avg_intensity
-                df_sel[f"std_intensity_flake_{snowflake_nr}_{flake}"] = std_intensity
+                df_sel[f"avg_intensity"] = avg_intensity
+                df_sel[f"std_intensity"] = std_intensity
                 
                 avg_gradient_angle = np.mean(gradient_angle(
                     sliced_img,
@@ -135,28 +139,30 @@ class Analyser:
                 ).astype(np.float32))
                 
                 if avg_gradient_angle > 85.:
-                    header(f"High average gradient angle detected: {avg_gradient_angle:.2f} degrees for flake {snowflake_nr}_{flake}")
+                    header(f"High average gradient angle detected: {avg_gradient_angle:.2f} degrees for flake {snowflake_nr}_{flake_id}")
                 
-                df_sel[f"gradient_angle_flake_{snowflake_nr}_{flake}"] = avg_gradient_angle
+                df_sel[f"gradient_angle_flake_{snowflake_nr}_{flake_id}"] = avg_gradient_angle
         
                 # print(f"Intensity average: {np.mean(sliced_img)}, std: {np.std(sliced_img)}")
                 if self.save:
                     os.makedirs(path, exist_ok=True)
                     write_image(original_img, save_path=path, filename="original_image.png")
-                    result.save(save_path=path)
+                    result.save(save_path=path, folder_desc=folder_desc)
                     
-                    df_sel.iloc[flake].to_csv(os.path.join(path, "metrics.csv"), index=False)
-                    write_image(sliced_img, save_path=path, filename=f"cropped_flake_image.png")
-                    write_image(normalised_slice, save_path=path, filename=f"normalised_cropped_flake_image.png")
-                    write_image(snowflake_img.astype(np.uint8)*255, save_path=path, filename=f"cropped_binarised_flake_image.png")
+                    flake_metrics.to_csv(os.path.join(path, "metrics.csv"), index=False)
+                    write_image(sliced_img, save_path=path, filename=f"{folder_desc}_cropped_flake_image.png")
+                    write_image(normalised_slice, save_path=path, filename=f"{folder_desc}_normalised_cropped_flake_image.png")
+                    write_image(snowflake_img.astype(np.uint8)*255, save_path=path, filename=f"{folder_desc}_cropped_binarised_flake_image.png")
                 
                 if self.plot:
-                    skimage_show_plot(snowflake, cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image), contour, display=display_plot, save=self.save, save_path=path, flake_id=flake)
+                    skimage_show_plot(snowflake, cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image), contour, display=display_plot, save=self.save, save_path=path, flake_id=flake_id)
                     plot_histogram(sliced_img, title=f"intensity_histogram_cropped_flake", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path)
-                    plot_histogram(original_img, title=f"intensity_histogram_{snowflake_nr}_{flake}_original", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path)
-                    plot_histogram(normalised_image, title=f"intensity_histogram_{snowflake_nr}_{flake}_normalised", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path)
+                    plot_histogram(original_img, title=f"intensity_histogram_{snowflake_nr}_{flake_id}_original", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path)
+                    plot_histogram(normalised_image, title=f"intensity_histogram_{snowflake_nr}_{flake_id}_normalised", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path)
                     
-                    plot_ellipse_overlay(gamma(image,0.4), tmp, 1, visual=self.cv2_display, save=self.save, save_path=path, flake_id=flake)
+                    plot_ellipse_overlay(gamma(image,0.4), tmp, 1, visual=self.cv2_display, save=self.save, save_path=path, flake_id=flake_id)
+                
+                flake_id += 1
 
             return (df_sel, elapsed)
         return (None, elapsed)

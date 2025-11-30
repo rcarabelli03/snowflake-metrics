@@ -40,8 +40,8 @@ class AnalysisResult:
             cv2.imshow(intermediate.name, intermediate.image.astype(np.uint8)*255)
         cv2.waitKey(display_time)
     
-    def save(self, save_path: str) -> None:
+    def save(self, save_path: str, folder_desc: str = "Snowflake_<id>") -> None:
         """Saves the labelled image and intermediate images to the specified path."""
-        write_image(self.labelled_image.astype(np.uint8)*255, save_path=save_path, filename="labelled_image.png")
+        write_image(self.labelled_image.astype(np.uint8)*255, save_path=save_path, filename=f"{folder_desc}_labelled_image.png")
         for intermediate in self.intermediates:
-            write_image(intermediate.image.astype(np.uint8), save_path=save_path, filename=f"{intermediate.name}.png")
+            write_image(intermediate.image.astype(np.uint8), save_path=save_path, filename=f"{folder_desc}_{intermediate.name}.png")

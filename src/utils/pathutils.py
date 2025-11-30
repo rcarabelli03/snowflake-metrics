@@ -40,7 +40,7 @@ def get_str_image_id_from_path(image_path: str) -> str:
     folder = get_image_folder(image_path)
     
     try:
-        snowflake_id = basename + "_" + folder
+        snowflake_id = basename # + "_" + folder
         print(snowflake_id)
     except IndexError:
         err(f"Could not extract snowflake ID from path: {image_path}")
