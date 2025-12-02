@@ -33,11 +33,12 @@ def get_args():
     #     help="Enable debug mode with additional outputs.",
     # )
     
-    # parser.add_argument(
-    #     "--verbose",
-    #     action="store_true",
-    #     help="Enable verbose logging.",
-    # )
+    parser.add_argument(
+        "--verbose",
+        default=False,
+        action="store_true",
+        help="Enable verbose logging.",
+    )
     
     parser.add_argument(
         "--save_disabled",
@@ -72,4 +73,6 @@ def load_config():
         config["plot"]["save"] = False
     if args.display_disabled:
         config["plot"]["display"] = False
+    if args.verbose:
+        config["verbose"]["enabled"] = True
     return config

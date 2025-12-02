@@ -25,7 +25,8 @@ def sobel_detector(image: MatLike, kernel_size: int = 3):
 def gradient_angle(image: MatLike, kernel_size: int = 3) -> MatLike:
     x_grad = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=kernel_size)
     y_grad = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=kernel_size)
-    angle = cv2.phase(x_grad, y_grad, angleInDegrees=True)
+    wonky_angle = cv2.phase(x=x_grad, y=y_grad, angleInDegrees=True) % 180
+    angle = np.minimum(wonky_angle, 180 - wonky_angle)
     return angle
 
 def calculate_sharp_edges(image: np.ndarray, threshold: float = 10.0) -> tuple[int, np.ndarray]:

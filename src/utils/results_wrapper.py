@@ -9,15 +9,10 @@ class IntermediateImage:
     name: str          
     image: np.ndarray
     
-@dataclass
-class SnowflakeDetection:
-    label: int
-    area: float
-    centroid: tuple[float, float]
-    bbox: tuple[int, int, int, int]
-    equivalent_diameter_area: float
-    image_filled: np.ndarray
-
+    def __init__(self, name: str, image: np.ndarray):
+        self.name = name.strip().replace(" ", "_")
+        self.image = image.copy()
+    
 @dataclass
 class AnalysisResult:
     pipeline_name: str

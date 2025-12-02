@@ -31,6 +31,8 @@ if __name__=="__main__":
     config = load_config()
     image_directory = config["paths"]["image_directory"]
     base_path = config["paths"]["output_directory"]
+    verbose = config["verbose"]["enabled"]
+    debug = config["debug"]["enabled"]
     
     save_path, csv_filepath = initial_setup(image_path=image_directory, out_path=base_path)
     
@@ -50,19 +52,24 @@ if __name__=="__main__":
     # sort images by snowflake id extracted from filename
     images = [img for _, img in sorted((get_snowflake_id_from_path(img), img) for img in images)]
     
+    if verbose or debug:
+        images = tqdm(images, desc="Processing images", unit="image")
     
     try:
-        for img_path in tqdm(images, desc="Processing images", unit="image"):
+        for img_path in images:
             
             name = get_image_filename(img_path)
             if name.startswith("processed_"): # legacy check
                 continue
-            header(f"Processing image: {img_path}, id: {get_snowflake_id_from_path(img_path)} from folder: {get_image_folder(img_path)} with str id: {get_str_image_id_from_path(img_path)}")
+            if verbose or debug:
+                header(f"Processing image: {img_path}, id: {get_snowflake_id_from_path(img_path)} from folder: {get_image_folder(img_path)} with str id: {get_str_image_id_from_path(img_path)}")
             
             # Read image in grayscale
             res: Optional[MatLike] = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-            if res is None:
+            if res is None and (verbose or debug):
                 err(f"Failed to read image: {img_path}")
+                
+            if res is None:
                 continue
             
             # Show slightly improved contrast using CLAHE and gamma correction for visual inspection
@@ -78,22 +85,28 @@ if __name__=="__main__":
             metrics, elapsed_analyser          = analyser.analyse_image(image=res, folder_desc=f"{get_str_image_id_from_path(img_path)}")
             
             # debug: print metrics
-            if metrics is None:
+            if metrics is None and (verbose or debug):
                 warn(f"No metrics extracted for image: {img_path}")
+            if metrics is None:
                 continue
-            print(f"Metrics for {os.path.basename(img_path)}:\n{metrics}")
+            
+            if verbose or debug:
+                print(f"Metrics for {os.path.basename(img_path)}:\n{metrics}")
             
             df.loc[len(df)] = np.concatenate((stats, [name]))
             
-            
-            info(f"Processing time: {elapsed_processor/1e6:.4f} ms, Analysis time: {elapsed_analyser/1e6:.4f} ms")
+            if verbose or debug:
+                info(f"Processing time: {elapsed_processor/1e6:.4f} ms, Analysis time: {elapsed_analyser/1e6:.4f} ms")
             
     except KeyboardInterrupt:
-        warn("Processing interrupted by user.")
+        if verbose or debug:
+            warn("Processing interrupted by user.")
         
     df.to_csv(csv_filepath, index=False)
     config_filepath = os.path.join(save_path, "config_used.yaml")
     with open(config_filepath, "w") as f:
         yaml.dump(config, f)
-    info(f"Saved results to {csv_filepath} and config to {config_filepath}")
+    if verbose or debug:
+        info(f"Saved results to {csv_filepath} and config to {config_filepath}")
+        
     cv2.destroyAllWindows()
