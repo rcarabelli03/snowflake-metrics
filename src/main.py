@@ -14,7 +14,7 @@ from tqdm import tqdm
 from utils.pathutils import get_snowflake_id_from_path, get_image_paths, get_image_filename, get_filtered_image_paths, __deprecated___get_image_paths_filtered, get_image_folder, get_str_image_id_from_path
 from utils.io.plotutils import plot_ellipse_overlay, plot_histogram
 from utils.consolecolors import bcolors
-from utils.print_wrapper import initial_setup, info, warn, err, header
+from utils.logger import initial_setup, info, warn, err, header
 from utils.configurator.config import load_config
 from processing.processor import preprocess_image, gamma, image_stats
 from processing.metrics import Analyser
@@ -33,8 +33,9 @@ if __name__=="__main__":
     base_path = config["paths"]["output_directory"]
     verbose = config["verbose"]["enabled"]
     debug = config["debug"]["enabled"]
+    output = verbose or debug # print output to console if verbose or debug is enabled (handled in print_wrapper)
     
-    save_path, csv_filepath = initial_setup(image_path=image_directory, out_path=base_path)
+    save_path, csv_filepath = initial_setup(image_path=image_directory, out_path=base_path, out=output) # set up logging, output dirs, csv file etc.
     
     analyser = Analyser(config=config, save_path=save_path)
     
@@ -46,7 +47,7 @@ if __name__=="__main__":
     # images = __deprecated___get_image_paths_filtered(image_dir="/mnt/e/pictures_Test/", start_from="11-12_15-50-21") # test_old, 10-22_12-27-20
     # images = get_image_paths("../images/nice_flakes")
     # images = ["../../images/nice_flakes/Snowflake_20.bmp"] #
-    images = get_image_paths(image_directory) #
+    images = get_image_paths(image_directory, out=output) #
     # images = ["/mnt/f/davos_1/11-17_2-29-24/Snowflake_284.bmp"]
     
     # sort images by snowflake id extracted from filename
@@ -61,15 +62,14 @@ if __name__=="__main__":
             name = get_image_filename(img_path)
             if name.startswith("processed_"): # legacy check
                 continue
-            if verbose or debug:
-                header(f"Processing image: {img_path}, id: {get_snowflake_id_from_path(img_path)} from folder: {get_image_folder(img_path)} with str id: {get_str_image_id_from_path(img_path)}")
+            # always log (console print controlled by print_wrapper)
+            header(f"Processing image: {img_path}, id: {get_snowflake_id_from_path(img_path)} from folder: {get_image_folder(img_path)} with str id: {get_str_image_id_from_path(img_path)}")
             
             # Read image in grayscale
             res: Optional[MatLike] = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-            if res is None and (verbose or debug):
-                err(f"Failed to read image: {img_path}")
-                
+            # always log read failures
             if res is None:
+                err(f"Failed to read image: {img_path}")
                 continue
             
             # Show slightly improved contrast using CLAHE and gamma correction for visual inspection
@@ -84,29 +84,25 @@ if __name__=="__main__":
             stats                              = image_stats(image=res, config=config) # returns an np array
             metrics, elapsed_analyser          = analyser.analyse_image(image=res, folder_desc=f"{get_str_image_id_from_path(img_path)}")
             
-            # debug: print metrics
-            if metrics is None and (verbose or debug):
-                warn(f"No metrics extracted for image: {img_path}")
+            # always log missing metrics
             if metrics is None:
+                warn(f"No metrics extracted for image: {img_path}")
                 continue
             
-            if verbose or debug:
-                print(f"Metrics for {os.path.basename(img_path)}:\n{metrics}")
+            # log metrics (console output depends on PRINT_TO_CONSOLE)
+            info(f"Metrics for {os.path.basename(img_path)}:\n{metrics}")
             
             df.loc[len(df)] = np.concatenate((stats, [name]))
             
-            if verbose or debug:
-                info(f"Processing time: {elapsed_processor/1e6:.4f} ms, Analysis time: {elapsed_analyser/1e6:.4f} ms")
+            info(f"Processing time: {elapsed_processor/1e6:.4f} ms, Analysis time: {elapsed_analyser/1e6:.4f} ms")
             
     except KeyboardInterrupt:
-        if verbose or debug:
-            warn("Processing interrupted by user.")
+        warn("Processing interrupted by user.")
         
     df.to_csv(csv_filepath, index=False)
     config_filepath = os.path.join(save_path, "config_used.yaml")
     with open(config_filepath, "w") as f:
         yaml.dump(config, f)
-    if verbose or debug:
-        info(f"Saved results to {csv_filepath} and config to {config_filepath}")
+    info(f"Saved results to {csv_filepath} and config to {config_filepath}")
         
     cv2.destroyAllWindows()

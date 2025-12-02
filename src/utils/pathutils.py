@@ -3,9 +3,9 @@ from os import walk
 import typing
 import numpy as np
 import cv2
-from utils.print_wrapper import info, warn, err, header
+from utils.logger import info, warn, err, header
 
-def get_image_paths(directory: str) -> typing.List[str]:
+def get_image_paths(directory: str, out: bool) -> typing.List[str]:
     if not os.path.exists(directory):
         err(f"Directory does not exist: {directory}")
         return []
@@ -15,6 +15,7 @@ def get_image_paths(directory: str) -> typing.List[str]:
         for file in files:
             if os.path.splitext(file)[1].lower() in image_extensions:
                 image_paths.append(os.path.join(root, file))
+    # always log number of found images; console printing controlled by PRINT_TO_CONSOLE
     info(f"Found {len(image_paths)} image files in directory: {directory}")
     return image_paths
 
@@ -41,8 +42,9 @@ def get_str_image_id_from_path(image_path: str) -> str:
     
     try:
         snowflake_id = basename # + "_" + folder
-    except IndexError:
+    except IndexError as e:
         err(f"Could not extract snowflake ID from path: {image_path}")
+        err("indexerror", exc=e)
         snowflake_id = "unknown"
     return snowflake_id
 
@@ -60,8 +62,9 @@ def get_snowflake_id_from_path(image_path: str) -> int:
     # FIXME:I need a much more sophisticated id labelling system. Currently, this doenst take into account different sources
     try:
         snowflake_id = int(name.split('_')[1]) # This assumes the filename format is "snowflake_<id>_..."
-    except (IndexError, ValueError):
+    except (IndexError, ValueError) as e:
         err(f"Could not extract snowflake ID from path: {image_path}")
+        err("indexerror or valueerror", exc=e)
         snowflake_id = -1
     return snowflake_id
 
@@ -72,12 +75,12 @@ def filter_paths_by_selection(image_paths: typing.List[str], selection: typing.L
 def get_filtered_image_paths() -> typing.List[str]:
     IMAGE_PATH: str = "path/to/your/images/"
     FLAKE_SELECTION_PATH: str = "path/to/images/that/define/selection/"
-    images: list[str] = get_image_paths(IMAGE_PATH)
+    images: list[str] = get_image_paths(IMAGE_PATH, True)
+    # always log discovery information
     info(f"Found {len(images)} images in {IMAGE_PATH}")
-    selected_snowflakes: list[str] = [get_image_filename(p) for p in get_image_paths(FLAKE_SELECTION_PATH)]
+    selected_snowflakes: list[str] = [get_image_filename(p) for p in get_image_paths(FLAKE_SELECTION_PATH, True)]
     snowflake_ids: list[int] = [get_snowflake_id_from_path(p) for p in selected_snowflakes if not p.startswith("processed_")]
-    
-    print(f"Filtering images based on selection of {len(snowflake_ids)} snowflakes...")
+    info(f"Filtering images based on selection of {len(snowflake_ids)} snowflakes...")
     images = filter_paths_by_selection(images, snowflake_ids)
     info(f"{len(images)} images remaining after filtering. Corresponding ids: {snowflake_ids}")
     return images
@@ -105,7 +108,7 @@ def __deprecated___get_image_paths_filtered(image_dir: str = "/mnt/e/pictures_Te
     
     subdirs = [d for d in os.listdir(image_dir) if os.path.isdir(os.path.join(image_dir, d))] # no, i wont use os.path.walk bc i need the subdirs sorted first
     subdirs.sort(key=key)
-    print(f"Sorted subdirectories: {subdirs}")
+    info(f"Sorted subdirectories: {subdirs}")
     
     NOTES = "10-7_15-4-42"
     paths: typing.List[str] = []
@@ -123,7 +126,7 @@ def __deprecated___get_image_paths_filtered(image_dir: str = "/mnt/e/pictures_Te
             for filename in filenames:
                 if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff')):
                     file_path = os.path.join(dirpath, filename)
-                    print(f"Found image file: {file_path}")
+                    info(f"Found image file: {file_path}")
                     paths.append(file_path)
     info(f"Total images found: {len(paths)}")
     return paths

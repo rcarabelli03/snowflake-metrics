@@ -1,6 +1,6 @@
 paths:
-  image_directory: "/mnt/d/davos_1/11-17_1-57-46/" # 11-17_2-29-24
-  output_directory: "/mnt/d/snowflake_analysis_plots"
+  image_directory: "/mnt/f/davos_1/11-17_1-57-46/" # 11-17_2-29-24
+  output_directory: "/mnt/f/snowflake_analysis_plots"
 
 constants:
   pixel_size: 5.86 # micrometers per pixel

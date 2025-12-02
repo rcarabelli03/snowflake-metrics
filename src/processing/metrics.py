@@ -11,7 +11,7 @@ import pandas as pd
 import math
 from processing.processor import calculate_sharp_edges, gamma, gradient_angle
 from utils.io.plotutils import plot_ellipse_overlay, skimage_show_plot, plot_histogram, write_image
-from utils.print_wrapper import info, warn, err, header
+from utils.logger import info, warn, err, header
 from utils.results_wrapper import IntermediateImage, AnalysisResult
 
 snowflake_nr = 0
@@ -50,8 +50,7 @@ class Analyser:
         
         self.previous_image: np.ndarray = np.ones((H, W), dtype=np.uint8) * 255  # initialize with a white image
         
-        if self.print:
-            print(f"""Analyser initialized with config:
+        info(f"""Analyser initialized with config:
             Gaussian Blur: kernel_size={self.ksize}, sigma={self.sigma}
             Thresholding value: {self.thresh}
             Sharp angle threshold: {self.sharp_angle_thresh}
@@ -63,8 +62,7 @@ class Analyser:
         self.duplicate_count = 0
         
     def __del__(self):
-        if self.print:
-            info(f"Detected {self.duplicate_count} duplicates (or even multiply duplicate images) in original dataset.")
+        info(f"Detected {self.duplicate_count} duplicates (or even multiply duplicate images) in original dataset.")
         
     def analyse_image(self, image: np.ndarray, folder_desc: str = "") -> tuple[typing.Optional[pd.DataFrame], float]:
                 
@@ -83,8 +81,7 @@ class Analyser:
         # Check for identical image to previous (skip)
         original_img = image.copy()
         if np.array_equal(image, self.previous_image):
-            if self.print:
-                warn("Identical image detected as previous one; skipping analysis.") # causes skew in resulting data
+            warn("Identical image detected as previous one; skipping analysis.") # causes skew in resulting data
             self.duplicate_count += 1
             return (None, 0.0)
             
@@ -98,8 +95,7 @@ class Analyser:
         elapsed = end - start
         
         if (result_1 is not None) and result_1.has_detections: # i mean, it should have detections if we got here
-            if self.print:  
-                info(f"Analysis algorithm detected {len(result_1.detections)} potential snowflakes.")          
+            info(f"Analysis algorithm detected {len(result_1.detections)} potential snowflakes.")          
             # extract intermediate images
             assert result_1.intermediates is not None, "Intermediates should not be None when detections are present."
             contour = find_contours(result_1.labelled_image, level=self.contour_level)
@@ -137,8 +133,7 @@ class Analyser:
                 path = os.path.join(save_path, f"{snowflake_nr}_{flake_id}_" + folder_desc)
                 tmp = df_sel.iloc[potential_flake].to_dict()
                 flake_metrics = df_sel[df_sel["equivalent_diameter_area"] == snowflake.equivalent_diameter_area]
-                if self.print:
-                    print(flake_metrics)
+                info(str(flake_metrics))
                 
                 display_plot = self.display_plot if snowflake.equivalent_diameter_area*pixel_size < self.area_thresh else False
                 
@@ -157,7 +152,7 @@ class Analyser:
                     3
                 ).astype(np.float32))
                 
-                if avg_gradient_angle > 30. and self.print:
+                if avg_gradient_angle > 30.:
                     header(f"High average gradient angle detected: {avg_gradient_angle:.2f} degrees for flake {snowflake_nr}_{flake_id}")
                 
                 df_sel[f"gradient_angle"] = avg_gradient_angle
@@ -184,8 +179,7 @@ class Analyser:
                 flake_id += 1
                 
         if result_2 is not None and result_2.has_detections:
-            if self.print:
-                info(f"Second analysis algorithm detected {len(result_2.detections)} potential snowflakes.")
+            info(f"Second analysis algorithm detected {len(result_2.detections)} potential snowflakes.")
             contour = find_contours(result_2.labelled_image, level=self.contour_level)
             
             save_path = self.save_path + "/algorithm_2/"
@@ -275,6 +269,7 @@ class Analyser:
         return data
     
     
+    
     #############################################################################################
     # Analysis algorithms
     #############################################################################################
@@ -296,8 +291,7 @@ class Analyser:
         inversion = cv2.bitwise_not(res)
             
         if number_of_sharp_edges > self.sharp_angle_thresh:
-            if self.print:
-                info(f"Image accepted for analysis: {number_of_sharp_edges} sharp edges detected.")
+            info(f"Image accepted for analysis: {number_of_sharp_edges} sharp edges detected.")
             _, res = cv2.threshold(res, self.thresh, 255, cv2.THRESH_OTSU)
             
             # overlay thresh and gradient on original for debugging
@@ -313,7 +307,7 @@ class Analyser:
             
             if self.enable_remove_small:
                 res = morphology.remove_small_objects(res, self.scale)
-                res = morphology.remove_small_holes(res, self.scale)
+                res = morphology.remove_small_holes(res.astype(bool), self.scale).astype(np.uint8)
                 
             # Morphological closing to fill small holes inside snowflakes
             kernel = np.ones((self.closing_ksize, self.closing_ksize), np.uint8)
@@ -349,8 +343,7 @@ class Analyser:
             return result
         
         # default
-        if self.print:
-            err("Image discarded due to insufficient sharp edges.")
+        err("Image discarded due to insufficient sharp edges.")
         return None
     
     def _analysis_algorithm_2(self, image: np.ndarray) -> typing.Optional[AnalysisResult]:
@@ -386,8 +379,7 @@ class Analyser:
             # print(f"average grad angle {avg_gradient_angle}, sharp edges {sharp_edges}")
             
             if avg_gradient_angle > 15. and sharp_edges > 500:
-                if self.print:
-                    header(f"High average gradient angle detected: {avg_gradient_angle:.2f} degrees for flake {flake_nr}, accepted for analysis.")
+                header(f"High average gradient angle detected: {avg_gradient_angle:.2f} degrees for flake {flake_nr}, accepted for analysis.")
                 intermediates.append(IntermediateImage(f"gradient_angle_{flake_nr}", grad_angle))
                 intermediates.append(IntermediateImage(f"sharp_edges_{flake_nr}", sharp_edges_image))
                 accepted_snowflakes.append(snowflake)
@@ -397,10 +389,9 @@ class Analyser:
             detections=accepted_snowflakes,
             labelled_image=label_img,
             intermediates=intermediates
-        )   
-                
-                
-    
+        )
 
-                
-                
+
+
+
+
