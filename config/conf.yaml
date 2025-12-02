@@ -1,5 +1,5 @@
 paths:
-  image_directory: "/mnt/f/davos_1/11-17_1-57-46/" # 11-17_2-29-24
+  image_directory: "/mnt/f/davos_1-57-46_sorted" # ... davos_1/11-17_1-57-46/, 11-17_2-29-24
   output_directory: "/mnt/f/snowflake_analysis_plots"
 
 constants:

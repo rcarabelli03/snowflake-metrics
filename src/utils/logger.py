@@ -7,7 +7,10 @@ import logging.handlers
 import subprocess
 import sys
 import shutil
+import tarfile
 from pathlib import Path
+
+VERSION = "1.0.0"
 
 LOGGER: typing.Optional[logging.Logger] = None
 PRINT_TO_CONSOLE: bool = True
@@ -33,7 +36,7 @@ def initial_setup(image_path: str, out_path: str, out: bool) -> typing.Tuple[str
     readme_path = os.path.join(save_path, "README.md")    
     README = f"""# Snowflake Metrics Analysis - {run_number}
 
-Generated on {run_number} by Snowflake Metrics Analysis Tool.
+Generated on {run_number} by Snowflake Metrics Analysis Tool v{VERSION}.
 
 Based on the images located in: `{out_path}`.
 
@@ -44,17 +47,28 @@ Each image has been analyzed to extract various metrics related to snowflake mor
 
 ## Naming Conventions
 
-- Processed images and metrics files are named using the format:
-    `snowflake_<global_id>_<local_id>_<size_um>um.<extension>`
-    where `<global_id>` is a unique identifier for the snowflake across all images, `<local_id>` is the identifier within the current image, and `<size_um>` is the equivalent diameter in micrometers.
+- Each processing run is stored in a separate directory named with the date and time of the run.
+- Metrics for all images are compiled in the `snowflake_image_metrics.csv` file.
+- For multiple analysis algorithms or configurations, subdirectories are created within the run directory.
 
-## Contents
+- Individual snowflake images and their metrics are stored in subdirectories named using the format:
+    `<global_id>_<local_id>_snowflake_<original_image_id>/`
+    where `<global_id>` is a unique identifier for the snowflake across all images, `<local_id>` is the identifier within the current image, and `<original_image_id>` is the image id assigned by the drone at image capture.
+
+
+## Contents and Structure
 
 - `snowflake_image_metrics.csv`: A CSV file containing computed metrics for all processed images
-- `<global_id>_<local_id>_snowflake_<original_image_id>_<run_date>/`: Subdirectories for each image containing:
-  - `snowflake_image_metrics.csv`: A CSV file with metrics for individual snowflakes in that image.
-  - Processed images: Individual images of isolated snowflakes, binarized versions, and overlays, etc.
-- info.txt: A text file containing metadata about the analysis run.
+- `algorithm_<algorithm_name>/`: Subdirectories for each analysis algorithm used, containing:
+    - `<global_id>_<local_id>_snowflake_<original_image_id>/`: Subdirectories for each image containing:
+        - `snowflake_image_metrics.csv`: A CSV file with metrics for individual snowflakes in that image.
+        - Processed images: Individual images of isolated snowflakes, binarized versions, and overlays, etc.
+- `metadata.txt`: A text file containing metadata about the analysis run.
+- `git_info.txt`: Information about the git commit and status at the time of analysis.
+- `requirements_<run_number>.txt`: A snapshot of the Python environment used for the analysis.
+- `code_snapshot.tar.gz`: A zipped snapshot of the codebase at the time of analysis.
+- `run.log`: A log file capturing detailed logs of the analysis process.
+- `README.md`: This readme file.
 
 ## Usage
 
@@ -180,7 +194,9 @@ def save_code_state(save_path: str, image_path: str, run_number: str) -> None:
             g.write(f"repo_root:{repo_root}\ncommit:{commit}\nbranch:{branch}\nstatus:\n{status}\n")
         # make a zip snapshot of the repo (may be large); user can opt to remove large files later
         archive_path = os.path.join(save_path, "code_snapshot")
-        shutil.make_archive(archive_path, 'zip', repo_root)
+        with tarfile.open(f"{archive_path}.tar.gz", "w:gz") as tar:
+            tar.add(repo_root, arcname=".", filter=lambda x: None if any(part in x.name for part in [".git", "__pycache__", ".venv", "venv", ".env"]) else x)
+            
         if LOGGER:
             LOGGER.info("Saved git info and zipped repo to %s.zip", archive_path)
     except Exception:

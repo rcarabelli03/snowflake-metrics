@@ -47,10 +47,30 @@ def get_args():
     )
     
     parser.add_argument(
-        "--display_disabled",
-        "-d",
+        "--display_matplotlib",
+        "-m",
         action="store_true",
         help="Run the program without displaying any outputs.",
+    )
+    
+    parser.add_argument(
+        "--display_intermediate",
+        "-d",
+        action="store_true",
+        help="Display plots during processing.",
+    )
+
+    parser.add_argument(
+        "--display_ellipses",
+        "-e",
+        action="store_true",
+        help="Display plots during processing.",
+    )
+    
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug mode with additional outputs.",
     )
     
     return parser.parse_args()
@@ -66,13 +86,16 @@ def load_config():
         config["paths"]["output_directory"] = args.output_dir
     
     # Set debug and verbose flags
-    # config["debug"]["enabled"] = args.debug
-    # config["debug"]["show_intermediate_images"] = args.debug
+    config["debug"]["enabled"] = args.debug
+    config["verbose"]["enabled"] = args.verbose
     
     if args.save_disabled:
         config["plot"]["save"] = False
-    if args.display_disabled:
-        config["plot"]["display"] = False
-    if args.verbose:
-        config["verbose"]["enabled"] = True
+    if args.display_intermediate:
+        config["debug"]["show_intermediate_images"] = True
+    if args.display_matplotlib:
+        config["plot"]["display"]["matplotlib"] = True
+    if args.display_ellipses:
+        config["plot"]["display"]["cv2_ellipses"] = True
+        
     return config

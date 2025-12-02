@@ -367,6 +367,7 @@ class Analyser:
         
         flake_nr = 0
         accepted_snowflakes = []
+        snowflakes = sorted(snowflakes, key=lambda x: x.equivalent_diameter_area, reverse=True)
         for snowflake in snowflakes:
             if snowflake.area < 600:
                 continue
