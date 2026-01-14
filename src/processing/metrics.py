@@ -170,11 +170,11 @@ class Analyser:
                 
                 if self.plot:
                     skimage_show_plot(snowflake, cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image), contour, display=display_plot, save=self.save, save_path=path, flake_id=flake_id)
-                    plot_histogram(sliced_img, title=f"intensity_histogram_cropped_flake", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path)
-                    plot_histogram(original_img, title=f"intensity_histogram_{snowflake_nr}_{flake_id}_original", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path)
-                    plot_histogram(normalised_image, title=f"intensity_histogram_{snowflake_nr}_{flake_id}_normalised", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path)
-                    
-                    plot_ellipse_overlay(gamma(image,0.4), tmp, 1, visual=self.cv2_display, save=self.save, save_path=path, flake_id=flake_id)
+                    plot_histogram(sliced_img, title=f"Intensity Histogram of the Cropped Flake", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path, filename=f"snowflake_{snowflake_nr}_{flake_id}_cropped_flake_histogram.png")
+                    plot_histogram(original_img, title=f"Intensity Histogram of Snowflake {snowflake_nr}/({flake_id}) (original)", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path, filename=f"snowflake_{snowflake_nr}_{flake_id}_original_histogram.png")
+                    plot_histogram(normalised_image, title=f"Intensity Histogram Snowflake {snowflake_nr}/({flake_id}) (normalised)", xlabel="Intensity", ylabel="Frequency", bins=256, visual=display_plot, save=self.save, save_path=path, filename=f"snowflake_{snowflake_nr}_{flake_id}normalised_histogram.png")
+                    normalise_original = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+                    plot_ellipse_overlay(normalise_original, tmp, 1, visual=self.cv2_display, save=self.save, save_path=path, flake_id=flake_id)
                 
                 flake_id += 1
                 
@@ -362,6 +362,7 @@ class Analyser:
         intermediates = [
             IntermediateImage("binarized_image", cells.astype(np.uint8)*255),
             IntermediateImage("gradient_image", full_grad),
+            IntermediateImage("convex_hull_image", morphology.convex_hull_image(cells).astype(np.uint8)*255),
             # IntermediateImage("unsharp_mask", sharp)
         ]
         

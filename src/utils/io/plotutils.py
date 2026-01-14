@@ -39,7 +39,7 @@ def plot_ellipse_overlay(img: MatLike, data: dict, display_time: int, visual=Fal
         cv2.imwrite(filename, img)
             
 def skimage_show_plot(snowflake, binary_image, contour=None, display=True, save=None, save_path=None, flake_id=None) -> None:
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 6), dpi=1000)
     ax.imshow(binary_image, cmap='gray') ##     ax.imshow(binary_image, cmap=plt.cm.gray)
     
     y0, x0 = snowflake.centroid
@@ -67,7 +67,6 @@ def skimage_show_plot(snowflake, binary_image, contour=None, display=True, save=
     by = (minr, minr, maxr, maxr, minr)
     ax.plot(bx, by, '-b', linewidth=2.5)
     
-    fig.set_size_inches(10, 13/2)
     plt.tight_layout()
     if display:
         plt.show()
@@ -75,12 +74,11 @@ def skimage_show_plot(snowflake, binary_image, contour=None, display=True, save=
     if save and save_path is not None and flake_id is not None:
         filename = f"snowflake_{flake_id}_analysis.png"
         filename = os.path.join(save_path, filename)
-        fig.set_dpi(1000)
         fig.savefig(filename)
     plt.close()
         
-def plot_histogram(image: np.ndarray, title: str, xlabel: str, ylabel: str, bins: int = 256, log: bool = True, visual=False, save: bool = False, save_path: str = "") -> None:
-    fig = plt.figure()
+def plot_histogram(image: np.ndarray, title: str, xlabel: str, ylabel: str, bins: int = 256, log: bool = True, visual=False, save: bool = False, save_path: str = "", filename: str = "") -> None:
+    fig = plt.figure(figsize=(10, 6), dpi=1000)
     # pdf
     hist_vals, bin_edges = np.histogram(image.flatten(), bins=bins, range=(0,256))
     # cdf
@@ -91,18 +89,16 @@ def plot_histogram(image: np.ndarray, title: str, xlabel: str, ylabel: str, bins
     plt.hist(image.flatten(), bins=bins, range=(0,256), color = 'r', log=log)
     plt.xlim([0,256])
     plt.legend(('cdf','histogram'), loc = 'upper left')
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.title(title, fontsize=20)
+    plt.xlabel(xlabel, fontsize=15)
+    plt.ylabel(ylabel, fontsize=15)
     # set ticks every 20 units and rotate x ticks by 45 degrees
     plt.xticks(np.arange(0, 257, 20), rotation=45)
-    fig.set_size_inches(10, 13/2)
     plt.tight_layout()
     
     
     if save and save_path:
-        filename = os.path.join(save_path, f"{title.replace(' ', '_')}.png")
-        fig.set_dpi(1000)
+        filename = os.path.join(save_path, filename)
         plt.savefig(filename)
     
     if visual:
