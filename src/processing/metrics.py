@@ -137,10 +137,15 @@ class Analyser:
                 
                 display_plot = self.display_plot if snowflake.equivalent_diameter_area*pixel_size < self.area_thresh else False
                 
+                ## handle per-snowflake averages and slice image for output
                 snowflake_img = snowflake.image_filled
                 bbox = snowflake.bbox
-                sliced_img = image[bbox[0]:bbox[2], bbox[1]:bbox[3]]
-                normalised_slice = normalised_image[bbox[0]:bbox[2], bbox[1]:bbox[3]]
+                bbox_new = self._expanded_bbox(bbox, image.shape)
+                flake_metrics.loc[:, "centroid_y_local"] = flake_metrics["centroid_y"] - bbox_new[0]
+                flake_metrics.loc[:, "centroid_x_local"] = flake_metrics["centroid_x"] - bbox_new[1]
+                
+                sliced_img = image[bbox_new[0]:bbox_new[2], bbox_new[1]:bbox_new[3]]
+                normalised_slice = normalised_image[bbox_new[0]:bbox_new[2], bbox_new[1]:bbox_new[3]]
                 
                 avg_intensity = np.mean(sliced_img)
                 std_intensity = np.std(sliced_img)
@@ -227,7 +232,8 @@ class Analyser:
         return (df_sel, elapsed)
 
     
-    
+    ## Helper function to extract metrics for the second algorithm (uses regionprops output instead of regionprops_table,
+    # so we don't get the nice df directly out of the congfig for free and thus have to extract our metrics manually)
     def snowflake_data(self, snowflake: ski.measure._regionprops.RegionProperties, image: np.ndarray) -> dict:
         # Extract bounding box
         bbox = snowflake.bbox
@@ -267,6 +273,24 @@ class Analyser:
             }
         
         return data
+    
+    def _expanded_bbox(
+        self,
+        bbox: tuple[int, int, int, int],
+        image_shape: tuple[int, ...],
+        scale_factor: int = 3,
+    ) -> tuple[int, int, int, int]:
+        height = bbox[2] - bbox[0]
+        width = bbox[3] - bbox[1]
+        new_height = int(height * scale_factor)
+        new_width = int(width * scale_factor)
+        center_y = (bbox[0] + bbox[2]) // 2
+        center_x = (bbox[1] + bbox[3]) // 2
+        y1_new = max(0, center_y - new_height // 2)
+        y2_new = min(image_shape[0], center_y + new_height // 2)
+        x1_new = max(0, center_x - new_width // 2)
+        x2_new = min(image_shape[1], center_x + new_width // 2)
+        return (y1_new, x1_new, y2_new, x2_new)
     
     
     
