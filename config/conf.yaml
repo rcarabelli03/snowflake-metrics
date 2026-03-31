@@ -1,7 +1,6 @@
 paths:
-  image_directory: "/mnt/f/davos_1-57-46_sorted" # ... davos_1/11-17_1-57-46/, 11-17_2-29-24
-  output_directory: "/mnt/f/snowflake_analysis_plots"
-
+  image_directory: "/mnt/d/ramon/image_data/sharp_snowflakes_subtracted/3-12_3-27-40" #/mnt/c/Users/ramon/OneDrive - ETH Zurich/ETH Mech. Engin/6. Semester/Bachelor's Thesis/My Work/20260211/2-11_18-33-48" # ... davos_1/11-17_1-57-46/, 11-17_2-29-24, /mnt/d/davos_1-57-46_sorted
+  output_directory: "/mnt/d/snowflake_analysis_plots" #"/mnt/c/Users/ramon/OneDrive - ETH Zurich/ETH Mech. Engin/6. Semester/Bachelor's Thesis/My Work/20260211/snowflake_analysis_plots" 
 constants:
   pixel_size: 5.86 # micrometers per pixel
   gravity: 9.81 # m/s^2 (not used currently)
@@ -24,14 +23,14 @@ verbose:
 
 preprocessing:
   thresholding:
-    method: "otsu" # options: "fixed", "otsu"
-    value: 50
+    method: "otsu" # options: "fixed", "otsu" ###otsu
+    value: 50 ###50
   sobel_detector:
-    kernel_size: 3
+    kernel_size: 3  ###3
   laplace_detector:
     kernel_size: 3
   gaussian_blur:
-    kernel_size: 7 # 5
+    kernel_size: 7 # 5 ###7
     sigma: 2.0
   morphology:
     opening:
@@ -46,9 +45,9 @@ preprocessing:
 
 analysis:
   gaussian_blur:
-    kernel_size: 7 # 5
+    kernel_size: 7 # 5 ###7
     sigma: 2.0
-  flake_sharp_angle_thresh: 300 # pixels
+  flake_sharp_angle_thresh: 300 # pixels ###300
   sobel_detector:
     kernel_size: 3
   morphology:
@@ -66,12 +65,12 @@ analysis:
       iterations: 2
   thresholding:
     method: "fixed" # options: "fixed", "otsu"
-    value: 20
+    value: 20 ###20
   remove_small_objects:
     enabled: true
-    small_object_size: 70 # pixels
+    small_object_size: 20 # pixels ###70
   regionprops:
-    min_area: 50 # pixels
+    min_area: 50 # pixels ###50
   contour_filtering:
     min_area: 100 # pixels
   find_contour_level: .5
@@ -91,6 +90,8 @@ metrics:
       "feret_diameter_max",
       "solidity",
     ]
+
+
   # metrics:
   #   [
   #     "centroid_x",

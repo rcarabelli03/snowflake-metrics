@@ -96,8 +96,9 @@ if __name__=="__main__":
             
             info(f"Processing time: {elapsed_processor/1e6:.4f} ms, Analysis time: {elapsed_analyser/1e6:.4f} ms")
             
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt):
         warn("Processing interrupted by user.")
+
         
     df.to_csv(csv_filepath, index=False)
     config_filepath = os.path.join(save_path, "config_used.yaml")

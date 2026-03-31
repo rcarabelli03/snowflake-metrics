@@ -29,7 +29,7 @@ def gradient_angle(image: MatLike, kernel_size: int = 3) -> MatLike:
     angle = np.minimum(wonky_angle, 180 - wonky_angle)
     return angle
 
-def calculate_sharp_edges(image: np.ndarray, threshold: float = 10.0) -> tuple[int, np.ndarray]:
+def calculate_sharp_edges(image: np.ndarray, threshold: float = 10) -> tuple[int, np.ndarray]: ### threshold: float = 10.0 with 50, no snowflake is detected and with less, the blob
     grad_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=3)
     grad_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=3)
     grad_magnitude = cv2.magnitude(grad_x, grad_y).copy()

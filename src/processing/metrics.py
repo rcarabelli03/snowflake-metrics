@@ -90,7 +90,7 @@ class Analyser:
         # Run and time analysis algorithms
         start = time.time_ns()
         result_1 = self._analysis_algorithm_1(image)
-        result_2 = self._analysis_algorithm_2(image)
+        #result_2 = self._analysis_algorithm_2(image)
         end = time.time_ns()
         elapsed = end - start
         
@@ -126,6 +126,8 @@ class Analyser:
             df_sel["complexity"] = df_sel["perimeter"]/(df_sel["equivalent_diameter_area"]*math.pi)
             df_sel["aspect_ratio"] = df_sel["axis_minor_length"]/df_sel["axis_major_length"]
             
+
+            scale_factor = 3  ### Scale factor to make the cropped image of the snowflakes larger
             flake_id = 0
             for snowflake, potential_flake in snowflakes:
                 snowflake_nr += 1
@@ -139,8 +141,21 @@ class Analyser:
                 
                 snowflake_img = snowflake.image_filled
                 bbox = snowflake.bbox
-                sliced_img = image[bbox[0]:bbox[2], bbox[1]:bbox[3]]
-                normalised_slice = normalised_image[bbox[0]:bbox[2], bbox[1]:bbox[3]]
+                ### Expanding bbox by a scale factor defined before the for loop
+                height = bbox[2] - bbox[0]
+                width = bbox[3] - bbox[1]
+                new_height = int(height*scale_factor)
+                new_width = int(width*scale_factor)
+                center_y = (bbox[0] + bbox[2]) // 2
+                center_x = (bbox[1] + bbox[3]) // 2
+                y1_new = max(0, center_y - new_height // 2)
+                y2_new = min(image.shape[0], center_y + new_height // 2)
+                x1_new = max(0, center_x - new_width // 2)      
+                x2_new = min(image.shape[1], center_x + new_width // 2)
+                bbox_new = (y1_new, x1_new, y2_new, x2_new)
+
+                sliced_img = image[bbox_new[0]:bbox_new[2], bbox_new[1]:bbox_new[3]]
+                normalised_slice = normalised_image[bbox_new[0]:bbox_new[2], bbox_new[1]:bbox_new[3]]
                 
                 avg_intensity = np.mean(sliced_img)
                 std_intensity = np.std(sliced_img)
@@ -178,50 +193,50 @@ class Analyser:
                 
                 flake_id += 1
                 
-        if result_2 is not None and result_2.has_detections:
-            info(f"Second analysis algorithm detected {len(result_2.detections)} potential snowflakes.")
-            contour = find_contours(result_2.labelled_image, level=self.contour_level)
+        # if result_2 is not None and result_2.has_detections:
+        #     info(f"Second analysis algorithm detected {len(result_2.detections)} potential snowflakes.")
+        #     contour = find_contours(result_2.labelled_image, level=self.contour_level)
             
-            save_path = self.save_path + "/algorithm_2/"
+        #     save_path = self.save_path + "/algorithm_2/"
 
-            # extract data and sort by size
-            snowflakes = result_2.detections
-            snowflakes.sort(key=lambda x: x.equivalent_diameter_area, reverse=True)
-            snowflakes = [(s, potential_flake) for potential_flake, s in enumerate(snowflakes) if s.equivalent_diameter_area > self.scale]
+        #     # extract data and sort by size
+        #     snowflakes = result_2.detections
+        #     snowflakes.sort(key=lambda x: x.equivalent_diameter_area, reverse=True)
+        #     snowflakes = [(s, potential_flake) for potential_flake, s in enumerate(snowflakes) if s.equivalent_diameter_area > self.scale]
             
-            flake_id = 0
-            for snowflake, potential_flake in snowflakes:
-                snowflake_2_nr += 1
+        #     flake_id = 0
+        #     for snowflake, potential_flake in snowflakes:
+        #         snowflake_2_nr += 1
                 
-                data = self.snowflake_data(snowflake, image) # dict of metrics
-                df_tmp = pd.DataFrame.from_dict(data, orient='index').T
+        #         data = self.snowflake_data(snowflake, image) # dict of metrics
+        #         df_tmp = pd.DataFrame.from_dict(data, orient='index').T
                 
-                normalised = image.copy()
-                cv2.normalize(image, normalised, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-                inversion = cv2.bitwise_not(normalised)
-                _, sharp_edges_image = calculate_sharp_edges(image=normalised)
+        #         normalised = image.copy()
+        #         cv2.normalize(image, normalised, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        #         inversion = cv2.bitwise_not(normalised)
+        #         _, sharp_edges_image = calculate_sharp_edges(image=normalised)
                 
-                sliced_img = image[snowflake.bbox[0]:snowflake.bbox[2], snowflake.bbox[1]:snowflake.bbox[3]]
-                sliced_normalised = normalised[snowflake.bbox[0]:snowflake.bbox[2], snowflake.bbox[1]:snowflake.bbox[3]]
+        #         sliced_img = image[snowflake.bbox[0]:snowflake.bbox[2], snowflake.bbox[1]:snowflake.bbox[3]]
+        #         sliced_normalised = normalised[snowflake.bbox[0]:snowflake.bbox[2], snowflake.bbox[1]:snowflake.bbox[3]]
                 
                                
-                path = os.path.join(save_path, f"{snowflake_2_nr}_{flake_id}_" + folder_desc)
-                if self.save:
-                    os.makedirs(path, exist_ok=True)
-                    write_image(original_img, save_path=path, filename=f"{folder_desc}_original_image.png")
-                    write_image(normalised, save_path=path, filename=f"{folder_desc}_normalised_image.png")
-                    write_image(inversion, save_path=path, filename=f"{folder_desc}_inversion_image.png")
-                    write_image(sharp_edges_image, save_path=path, filename=f"{folder_desc}_sharp_edges_image.png")
-                    write_image(sliced_img, save_path=path, filename=f"{folder_desc}_cropped_flake_image.png")
-                    write_image(sliced_normalised, save_path=path, filename=f"{folder_desc}_normalised_cropped_flake_image.png")
-                    result_2.save(save_path=path, folder_desc=folder_desc)
+        #         path = os.path.join(save_path, f"{snowflake_2_nr}_{flake_id}_" + folder_desc)
+        #         if self.save:
+        #             os.makedirs(path, exist_ok=True)
+        #             write_image(original_img, save_path=path, filename=f"{folder_desc}_original_image.png")
+        #             write_image(normalised, save_path=path, filename=f"{folder_desc}_normalised_image.png")
+        #             write_image(inversion, save_path=path, filename=f"{folder_desc}_inversion_image.png")
+        #             write_image(sharp_edges_image, save_path=path, filename=f"{folder_desc}_sharp_edges_image.png")
+        #             write_image(sliced_img, save_path=path, filename=f"{folder_desc}_cropped_flake_image.png")
+        #             write_image(sliced_normalised, save_path=path, filename=f"{folder_desc}_normalised_cropped_flake_image.png")
+        #             result_2.save(save_path=path, folder_desc=folder_desc)
                     
-                    df_tmp.to_csv(os.path.join(path, "metrics.csv"), index=False)
+        #             df_tmp.to_csv(os.path.join(path, "metrics.csv"), index=False)
                 
-                if self.plot:
-                    skimage_show_plot(snowflake, cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image), contour, display=self.display_plot, save=self.save, save_path=path, flake_id=flake_id)
+        #         if self.plot:
+        #             skimage_show_plot(snowflake, cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(image), contour, display=self.display_plot, save=self.save, save_path=path, flake_id=flake_id)
                 
-                flake_id += 1
+        #         flake_id += 1
 
 
         return (df_sel, elapsed)
@@ -230,11 +245,29 @@ class Analyser:
     
     def snowflake_data(self, snowflake: ski.measure._regionprops.RegionProperties, image: np.ndarray) -> dict:
         # Extract bounding box
+        ### Expanding bbox by a defined scale factor
+        scale_factor = 3
         bbox = snowflake.bbox
-        sliced_img = image[bbox[0]:bbox[2], bbox[1]:bbox[3]]
+
+        height = bbox[2] - bbox[0]
+        width = bbox[3] - bbox[1]
+        new_height = int(height*scale_factor)
+        new_width = int(width*scale_factor)
+        center_y = (bbox[0] + bbox[2]) // 2
+        center_x = (bbox[1] + bbox[3]) // 2
+        y1_new = max(0, center_y - new_height // 2)
+        y2_new = min(image.shape[0], center_y + new_height // 2)
+        x1_new = max(0, center_x - new_width // 2)      
+        x2_new = min(image.shape[1], center_x + new_width // 2)
+        bbox_new = (y1_new, x1_new, y2_new, x2_new)
+
+        sliced_img = image[bbox_new[0]:bbox_new[2], bbox_new[1]:bbox_new[3]]
         
         centroid = snowflake.centroid
         centroid_local = snowflake.centroid_local
+
+        new_y_local = centroid_local[0] + (bbox[0] - bbox_new[0])
+        new_x_local = centroid_local[1] + (bbox[1] - bbox_new[1])
         
         # Calculate average intensity and standard deviation
         avg_intensity = np.mean(sliced_img)
@@ -250,8 +283,8 @@ class Analyser:
         data = {
             "centroid_y": centroid[0],
             "centroid_x": centroid[1],
-            "centroid_y_local": centroid_local[0],
-            "centroid_x_local": centroid_local[1],
+            "centroid_y_local": new_y_local,
+            "centroid_x_local": new_x_local,
             "axis_major_length": snowflake.axis_major_length,
             "axis_minor_length": snowflake.axis_minor_length,
             "orientation": snowflake.orientation,
